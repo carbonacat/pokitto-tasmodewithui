@@ -362,6 +362,9 @@
 		},
 		"\\bin\\pokitto-tasmodewithui.bin.4.gif": {
 			"sdcard": false
+		},
+		"\\src\\ptui\\TASTerminalTileMap.hpp": {
+			"sdcard": false
 		}
 	}
 }
