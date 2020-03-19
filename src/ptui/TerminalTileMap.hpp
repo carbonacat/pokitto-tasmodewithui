@@ -19,6 +19,7 @@ namespace ptui
         static constexpr auto rows = rowsP;
         static constexpr auto tileWidth = tileWidthP;
         static constexpr auto tileHeight = tileHeightP;
+        static constexpr auto tileSize = tileWidth * tileHeightP * 1; // 8bpp
         static constexpr auto width = columns * tileWidthP;
         static constexpr auto height = rows * tileHeightP;
         static constexpr auto lineWidth = lineWidthP;
@@ -64,6 +65,13 @@ namespace ptui
             return _offsetY;
         }
         
+        // Must be called before use!
+        // Is a 8BPP tileset where each tile is 6x6 pixels.
+        void setTileset(const unsigned char* tilesetData) noexcept
+        {
+            _tilesetData = tilesetData;
+        }
+        
         
     public: // Drawing & Printing.
         // Changes a given tile in this map.
@@ -107,10 +115,18 @@ namespace ptui
                     auto pixelP = lineBuffer + index;
                     
                     // TODO: Can be ++'d instead of computed again.
+                    // TODO: Can also be skipped completely if empty.
                     auto tile = _tiles[_tileIndex(tileX, _tileY)];
                     
                     if (tile != 0)
-                        *pixelP = tile + tileSubX + _tileSubY;
+                    {
+                        auto tileIndex = tile * tileSize;
+                        auto tileData = _tilesetData + tileIndex;
+                        auto tilePixel = tileData[_tileSubY * tileWidth + tileSubX];
+                        
+                        if (tilePixel != 0)
+                            *pixelP = tilePixel;
+                    }
                     if (tileSubX == tileWidth - 1)
                     {
                         tileSubX = 0;
@@ -146,6 +162,7 @@ namespace ptui
         short _tileYStart = 0;
         short _tileSubYStart = 0;
 
+        const unsigned char* _tilesetData = nullptr;
         Tiles _tiles;
     };
 }

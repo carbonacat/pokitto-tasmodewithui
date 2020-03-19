@@ -3,6 +3,7 @@
 #include <Tilemap.hpp>
 #include <SDFileSystem.h>
 #include "sprites/Mareve.h"
+#include "tilesets/TerminalTileSet.h"
 #include "maps.h"
 #include "ptui/TASTerminalTileMap.hpp"
 
@@ -28,28 +29,49 @@ int main()
     int characterY = 32;
     int speed=1;
     
+    // Configuration.
+    ptui::tasUITileMap.setTileset(TerminalTileSet);
+    
     // Drawing the UI.
     {
-        int shift = 0;
         
         // ptui::tasUITileMap.setOffset(220 - ptui::TASUITileMap::width, 176 - ptui::TASUITileMap::height);
         
-        while ((shift < ptui::TASUITileMap::columns) && (shift < ptui::TASUITileMap::rows))
+        const auto tile = 24;
+    
+        const auto boxX = 0;
+        const auto boxY = 0;
+        const auto boxXLast = ptui::TASUITileMap::columns - 1;
+        const auto boxYLast = ptui::TASUITileMap::rows - 1;
+    
+        ptui::tasUITileMap.setTile(boxX, boxY, 24);
+        ptui::tasUITileMap.setTile(boxX, boxYLast, 30);
+        ptui::tasUITileMap.setTile(boxXLast, boxY, 26);
+        ptui::tasUITileMap.setTile(boxXLast, boxYLast, 28);
+        for (int i = boxX + 1; i <= boxXLast - 1; i++)
         {
-            const auto tile = shift + 1;
-        
-            for (int i = shift; i < ptui::TASUITileMap::columns - shift; i++)
-            {
-                ptui::tasUITileMap.setTile(i, shift, tile);
-                ptui::tasUITileMap.setTile(i, ptui::TASUITileMap::rows - 1 - shift, tile);
-            }
-            for (int j = shift; j < ptui::TASUITileMap::rows - shift; j++)
-            {
-                ptui::tasUITileMap.setTile(shift, j, tile);
-                ptui::tasUITileMap.setTile(ptui::TASUITileMap::columns - 1 - shift, j, tile);
-            }
-            shift += 2;
+            ptui::tasUITileMap.setTile(i, boxY, 25);
+            ptui::tasUITileMap.setTile(i, boxYLast, 29);
         }
+        for (int j = boxY + 1; j <= boxYLast - 1; j++)
+        {
+            ptui::tasUITileMap.setTile(boxX, j, 31);
+            ptui::tasUITileMap.setTile(boxXLast, j, 27);
+        }
+        for (int i = boxX + 1; i <= boxXLast - 1; i++)
+            for (int j = boxY + 1; j <= boxYLast - 1; j++)
+            {
+                ptui::tasUITileMap.setTile(i, j, 32);
+            }
+        ptui::tasUITileMap.setTile(boxX + 1, boxY + 1, '1');
+        ptui::tasUITileMap.setTile(boxXLast - 1, boxY + 1, '1');
+        ptui::tasUITileMap.setTile(boxX + 1, boxYLast - 1, '1');
+        ptui::tasUITileMap.setTile(boxXLast - 1, boxYLast - 1, '1');
+        
+        
+        ptui::tasUITileMap.setTile((boxX + boxXLast)/2 - 1, (boxY + boxYLast)/2, 'O');
+        ptui::tasUITileMap.setTile((boxX + boxXLast)/2, (boxY + boxYLast)/2, 'N');
+        ptui::tasUITileMap.setTile((boxX + boxXLast)/2 + 1, (boxY + boxYLast)/2, 'E');
     }
     while (PC::isRunning())
     {

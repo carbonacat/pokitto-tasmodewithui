@@ -16,7 +16,7 @@ namespace ptui
     constexpr unsigned ttmFullDisplayColumns = (lcdWidth + ttmTileWidth - 1) / ttmTileWidth;
     constexpr unsigned ttmFullDisplayRows = (lcdHeight + ttmTileHeight - 1) / ttmTileHeight;
     
-    constexpr unsigned ttmColumns = 5;
+    constexpr unsigned ttmColumns = 9;
     constexpr unsigned ttmRows = 5;
     
     using TASUITileMap = TerminalTileMap<ttmColumns, ttmRows, ttmTileWidth, ttmTileHeight, lcdWidth>;
