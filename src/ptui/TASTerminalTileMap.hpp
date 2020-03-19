@@ -8,12 +8,16 @@
 
 namespace ptui
 {
-    constexpr unsigned ttmColumns = 37;
-    constexpr unsigned ttmRows = 30;
-    constexpr unsigned ttmTileWidth = 6;
-    constexpr unsigned ttmTileHeight = 6;
     constexpr unsigned lcdWidth = PROJ_LCDWIDTH;
     constexpr unsigned lcdHeight = PROJ_LCDHEIGHT;
+    constexpr unsigned ttmTileWidth = 6;
+    constexpr unsigned ttmTileHeight = 6;
+    // Calculates the right number of tiles depending on the screen size.
+    constexpr unsigned ttmFullDisplayColumns = (lcdWidth + ttmTileWidth - 1) / ttmTileWidth;
+    constexpr unsigned ttmFullDisplayRows = (lcdHeight + ttmTileHeight - 1) / ttmTileHeight;
+    
+    constexpr unsigned ttmColumns = 5;
+    constexpr unsigned ttmRows = 5;
     
     using TASUITileMap = TerminalTileMap<ttmColumns, ttmRows, ttmTileWidth, ttmTileHeight, lcdWidth>;
     

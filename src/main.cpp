@@ -31,10 +31,13 @@ int main()
     // Drawing the UI.
     {
         int shift = 0;
-        const auto tile = 128;
+        
+        // ptui::tasUITileMap.setOffset(220 - ptui::TASUITileMap::width, 176 - ptui::TASUITileMap::height);
         
         while ((shift < ptui::TASUITileMap::columns) && (shift < ptui::TASUITileMap::rows))
         {
+            const auto tile = shift + 1;
+        
             for (int i = shift; i < ptui::TASUITileMap::columns - shift; i++)
             {
                 ptui::tasUITileMap.setTile(i, shift, tile);
@@ -57,28 +60,42 @@ int main()
             int oldX = characterX;
             int oldY = characterY;
     
-            speed = PB::bBtn() ? 4 : 1;
-            while (speed--)
+            if (PB::aBtn())
             {
+                auto offsetX = ptui::tasUITileMap.offsetX();
+                auto offsetY = ptui::tasUITileMap.offsetY();
+        
+                if (PB::leftBtn()) offsetX--;
+                if (PB::rightBtn()) offsetX++;
+                if (PB::downBtn()) offsetY++;
+                if (PB::upBtn()) offsetY--;
+                ptui::tasUITileMap.setOffset(offsetX, offsetY);
+            }
+            else
+            {
+                speed = PB::bBtn() ? 4 : 1;
+                while (speed--)
                 {
-                    if (PB::leftBtn()) characterX--;
-                    if (PB::rightBtn()) characterX++;
-                    
-                    int tileX = characterX / PROJ_TILE_W;
-                    int tileY = characterY / PROJ_TILE_H;
-                    auto tile = gardenPathEnum(tileX, tileY);
-                    if (tile == Collide)
-                        characterX = oldX;
-                }
-                {
-                    if (PB::downBtn()) characterY++;
-                    if (PB::upBtn()) characterY--;
-                    
-                    int tileX = characterX / PROJ_TILE_W;
-                    int tileY = characterY / PROJ_TILE_H;
-                    auto tile = gardenPathEnum(tileX, tileY);
-                    if (tile == Collide)
-                        characterY = oldY;
+                    {
+                        if (PB::leftBtn()) characterX--;
+                        if (PB::rightBtn()) characterX++;
+                        
+                        int tileX = characterX / PROJ_TILE_W;
+                        int tileY = characterY / PROJ_TILE_H;
+                        auto tile = gardenPathEnum(tileX, tileY);
+                        if (tile == Collide)
+                            characterX = oldX;
+                    }
+                    {
+                        if (PB::downBtn()) characterY++;
+                        if (PB::upBtn()) characterY--;
+                        
+                        int tileX = characterX / PROJ_TILE_W;
+                        int tileY = characterY / PROJ_TILE_H;
+                        auto tile = gardenPathEnum(tileX, tileY);
+                        if (tile == Collide)
+                            characterY = oldY;
+                    }
                 }
             }
         }

@@ -19,7 +19,41 @@ namespace ptui
         static constexpr auto rows = rowsP;
         static constexpr auto tileWidth = tileWidthP;
         static constexpr auto tileHeight = tileHeightP;
+        static constexpr auto width = columns * tileWidthP;
+        static constexpr auto height = rows * tileHeightP;
         static constexpr auto lineWidth = lineWidthP;
+        
+        
+    public: // Configurations.
+        // Changes the origin to the top-left of the display.
+        void setOffset(int offsetX, int offsetY) noexcept
+        {
+            _offsetX = offsetX;
+            _offsetY = offsetY;
+            if (offsetX >= 0)
+            {
+                _indexStart = offsetX;
+                _indexEnd = std::min<int>(lineWidth, _indexStart + width);
+                _tileXStart = 0;
+                _tileSubXStart = 0;
+            }
+            else
+            {
+                _indexStart = 0;
+                _indexEnd = std::min<int>(lineWidth, _indexStart + offsetX + width);
+                _tileXStart = -offsetX / tileWidth;
+                _tileSubXStart = -offsetX - _tileXStart * tileWidth;
+            }
+            
+        }
+        auto offsetX() const noexcept
+        {
+            return _offsetX;
+        }
+        auto offsetY() const noexcept
+        {
+            return _offsetY;
+        }
         
         
     public: // Drawing & Printing.
@@ -27,7 +61,7 @@ namespace ptui
         // Safe - x & y are checked.
         void setTile(int x, int y, Tile tile) noexcept
         {
-            if ((x < 0) || (x >= columnsP) || (y < 0) || (y >= rowsP))
+            if ((x < 0) || (x >= columns) || (y < 0) || (y >= rows))
                 return;
             _tiles[_tileIndex(x, y)] = tile;
         }
@@ -44,7 +78,9 @@ namespace ptui
             }
             else
             {
-                if (_tileSubY == tileHeightP - 1)
+                if (_tileY >= rows)
+                    return ;
+                if (_tileSubY == tileHeight - 1)
                 {
                     _tileSubY = 0;
                     _tileY++;
@@ -54,16 +90,19 @@ namespace ptui
             }
             if (!skip)
             {
-                int tileSubX = 0;
-                int tileX = 0;
+                int tileSubX = _tileSubXStart;
+                int tileX = _tileXStart;
                 
                 for (int index = _indexStart; index < _indexEnd; index++)
                 {
                     auto pixelP = lineBuffer + index;
                     
                     // TODO: Can be ++'d instead of computed again.
-                    *pixelP += _tiles[_tileIndex(tileX, _tileY)];
-                    if (tileSubX == tileWidthP - 1)
+                    auto tile = _tiles[_tileIndex(tileX, _tileY)];
+                    
+                    if (tile != 0)
+                        *pixelP = tile + tileSubX + _tileSubY;
+                    if (tileSubX == tileWidth - 1)
                     {
                         tileSubX = 0;
                         tileX++;
@@ -75,24 +114,28 @@ namespace ptui
         }
         
     private:
-        using Tiles = std::array<Tile, columnsP * rowsP>;
+        using Tiles = std::array<Tile, columns * rows>;
     
-        static constexpr short _safeIndexEnd(short index) noexcept
-        {
-            return std::min(lineWidthP, index + columnsP * tileWidthP);
-        }
         static constexpr auto _tileIndex(short tileX, short tileY) noexcept
         {
-            return tileX + tileY * columnsP;
+            return tileX + tileY * columns;
         }
+    
+        short _offsetX = 0;
+        short _offsetY = 0;
     
         // Changes only when an offset is introduced.
         short _indexStart = 0;
-        short _indexEnd = _safeIndexEnd(0);
+        short _indexEnd = std::min(lineWidth, 0 + width);
         
         // The y coordinate within the current tile.
         short _tileSubY = 0;
         short _tileY = 0;
+        
+        short _tileXStart = 0;
+        short _tileSubXStart = 0;
+        short _tileYStart = 0;
+        short _tileSubYStart = 0;
 
         Tiles _tiles;
     };
