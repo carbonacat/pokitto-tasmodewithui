@@ -44,7 +44,16 @@ namespace ptui
                 _tileXStart = -offsetX / tileWidth;
                 _tileSubXStart = -offsetX - _tileXStart * tileWidth;
             }
-            
+            if (offsetY >= 0)
+            {
+                _tileYStart = -offsetY / static_cast<int>(tileWidth);
+                _tileSubYStart = -offsetY - _tileYStart * tileWidth;
+            }
+            else
+            {
+                _tileYStart = -offsetY / tileWidth;
+                _tileSubYStart = -offsetY - _tileYStart * tileWidth;
+            }
         }
         auto offsetX() const noexcept
         {
@@ -73,13 +82,11 @@ namespace ptui
         {
             if (y == 0)
             {
-                _tileSubY = 0;
-                _tileY = 0;
+                _tileY = _tileYStart;
+                _tileSubY = _tileSubYStart;
             }
             else
             {
-                if (_tileY >= rows)
-                    return ;
                 if (_tileSubY == tileHeight - 1)
                 {
                     _tileSubY = 0;
@@ -88,6 +95,8 @@ namespace ptui
                 else
                     _tileSubY++;
             }
+            if ((y < _offsetY) || (_tileY >= static_cast<int>(rows)))
+                return ;
             if (!skip)
             {
                 int tileSubX = _tileSubXStart;
