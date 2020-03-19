@@ -338,6 +338,30 @@
 		},
 		"\\src\\ptui\\TerminalTileMap.hpp": {
 			"sdcard": false
+		},
+		"\\src\\ptui\\LineFiller.hpp": {
+			"sdcard": false
+		},
+		"\\src\\ptui": {
+			"sdcard": false
+		},
+		"\\src\\ptui\\TASLineFiller.hpp": {
+			"sdcard": false
+		},
+		"\\src\\ptui\\TASLineFiller.cpp": {
+			"sdcard": false
+		},
+		"\\bin\\pokitto-tasmodewithui.bin.1.gif": {
+			"sdcard": false
+		},
+		"\\bin\\pokitto-tasmodewithui.bin.2.gif": {
+			"sdcard": false
+		},
+		"\\bin\\pokitto-tasmodewithui.bin.3.gif": {
+			"sdcard": false
+		},
+		"\\bin\\pokitto-tasmodewithui.bin.4.gif": {
+			"sdcard": false
 		}
 	}
 }

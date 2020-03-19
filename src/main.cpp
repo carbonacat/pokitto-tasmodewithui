@@ -4,8 +4,11 @@
 #include <SDFileSystem.h>
 #include "sprites/Mareve.h"
 #include "maps.h"
+#include "ptui/TASLineFiller.hpp"
 
-int main(){
+
+int main()
+{
     using PC=Pokitto::Core;
     using PD=Pokitto::Display;
     using PB=Pokitto::Buttons;
