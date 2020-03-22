@@ -122,11 +122,6 @@ int main()
         }
         ptui::tasUITileMap.setTile(1, 1, '0' + PC::fps_counter / 10);
         ptui::tasUITileMap.setTile(2, 1, '0' + PC::fps_counter % 10);
-        for (int i = 0; i < 30; i += 1)
-        {
-            ptui::tasUITileMap.setTile(i, i, '0' + PC::fps_counter / 10);
-            ptui::tasUITileMap.setTile(i + 1, i, '0' + PC::fps_counter % 10);
-        }
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
