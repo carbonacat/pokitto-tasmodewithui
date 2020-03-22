@@ -109,15 +109,14 @@ namespace ptui
             {
                 int tileSubX = _tileSubXStart;
                 int tileX = _tileXStart;
+                int tileIndex = _tileIndex(tileX, _tileY);
+                auto tile = _tiles[tileIndex];
                 
-                for (int index = _indexStart; index < _indexEnd; index++)
+                // Iterates over all the concerned pixels.
+                for (auto pixelP = lineBuffer + _indexStart, pixelPEnd = lineBuffer + _indexEnd; pixelP < pixelPEnd; pixelP++)
                 {
-                    auto pixelP = lineBuffer + index;
-                    
                     // TODO: Can be ++'d instead of computed again.
                     // TODO: Can also be skipped completely if empty.
-                    auto tile = _tiles[_tileIndex(tileX, _tileY)];
-                    
                     if (tile != 0)
                     {
                         auto tileIndex = tile * tileSize;
@@ -131,6 +130,8 @@ namespace ptui
                     {
                         tileSubX = 0;
                         tileX++;
+                        tileIndex++;
+                        tile = _tiles[tileIndex];
                     }
                     else
                         tileSubX++;
