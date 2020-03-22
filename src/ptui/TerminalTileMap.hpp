@@ -92,6 +92,7 @@ namespace ptui
             {
                 _tileY = _tileYStart;
                 _tileSubY = _tileSubYStart;
+                _tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
             }
             else
             {
@@ -99,9 +100,14 @@ namespace ptui
                 {
                     _tileSubY = 0;
                     _tileY++;
+                    _tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
                 }
                 else
+                {
+                    // Onto the next pixel line of the same tile row!
                     _tileSubY++;
+                    _tileDataRowBase += tileWidth;
+                }
             }
             if ((y < _offsetY) || (_tileY >= static_cast<int>(rows)))
                 return ;
@@ -109,10 +115,9 @@ namespace ptui
             {
                 int tileIndex = _tileIndex(_tileXStart, _tileY);
                 auto tile = _tiles[tileIndex];
-                // TODO: Replace _tileSubY by _tileDataRowOffset.
-                auto tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
                 const unsigned char* tileDataPLast;
                 const unsigned char* tileDataP;
+                auto tileDataRowBase = _tileDataRowBase; // Won't mutate, but will be read multiple time.
                 
                 {
                     auto tileDataPStart = tileDataRowBase + tile * tileSize;
@@ -120,7 +125,6 @@ namespace ptui
                     tileDataP = tileDataPStart + _tileSubXStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
                 }
-                int tileSubX = _tileSubXStart;
 
                 // Iterates over all the concerned pixels.
                 for (auto pixelP = lineBuffer + _indexStart, pixelPEnd = lineBuffer + _indexEnd; pixelP < pixelPEnd; pixelP++)
@@ -135,7 +139,6 @@ namespace ptui
                     }
                     if (tileDataP == tileDataPLast)
                     {
-                        tileSubX = 0;
                         tileIndex++;
                         tile = _tiles[tileIndex];
                         
@@ -145,10 +148,7 @@ namespace ptui
                         tileDataPLast = tileDataPStart + tileWidth - 1;
                     }
                     else
-                    {
                         tileDataP++;
-                        tileSubX++;
-                    }
                 }
             }
         }
@@ -176,6 +176,9 @@ namespace ptui
         short _tileSubXStart = 0;
         short _tileYStart = 0;
         short _tileSubYStart = 0;
+        
+        // Derived from _tilesetData
+        const unsigned char* _tileDataRowBase = nullptr;
 
         const unsigned char* _tilesetData = nullptr;
         Tiles _tiles;
