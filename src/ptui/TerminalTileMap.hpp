@@ -108,8 +108,7 @@ namespace ptui
             if (!skip)
             {
                 int tileSubX = _tileSubXStart;
-                int tileX = _tileXStart;
-                int tileIndex = _tileIndex(tileX, _tileY);
+                int tileIndex = _tileIndex(_tileXStart, _tileY);
                 auto tile = _tiles[tileIndex];
                 auto tileDataRowOffset = _tileSubY * tileWidth;
                 auto tileData = _tilesetData + tile * tileSize + tileDataRowOffset;
@@ -129,7 +128,6 @@ namespace ptui
                     if (tileSubX == tileWidth - 1)
                     {
                         tileSubX = 0;
-                        tileX++;
                         tileIndex++;
                         tile = _tiles[tileIndex];
                         tileData = _tilesetData + tile * tileSize + tileDataRowOffset;
