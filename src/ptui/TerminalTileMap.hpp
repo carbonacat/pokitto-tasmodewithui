@@ -119,6 +119,8 @@ namespace ptui
                 const unsigned char* tileDataPLast;
                 const unsigned char* tileDataP;
                 auto tileDataRowBase = _tileDataRowBase; // Won't mutate, but will be read multiple time.
+                auto pixelP = lineBuffer + _indexStart;
+                auto pixelPEnd = lineBuffer + _indexEnd;
                 
                 {
                     auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
@@ -130,7 +132,7 @@ namespace ptui
                 }
 
                 // Iterates over all the concerned pixels.
-                for (auto pixelP = lineBuffer + _indexStart, pixelPEnd = lineBuffer + _indexEnd; pixelP < pixelPEnd; pixelP++)
+                for (; pixelP < pixelPEnd; pixelP++)
                 {
                     auto tilePixel = *tileDataP;
                     
@@ -140,13 +142,18 @@ namespace ptui
                     {
                         // Onto the next tile in the row!
                         tileP++;
+                        
+                        // Automatically skip any empty tiles.
+                        while ((pixelP < pixelPEnd) && (*tileP == 0))
+                        {
+                            tileP++;
+                            pixelP += tileWidth;
+                        }
 
                         auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
                     
                         tileDataP = tileDataPStart;
                         tileDataPLast = tileDataPStart + tileWidth - 1;
-                        
-                        // TODO: Can automatically skip 0 tiles!
                     }
                     else
                         tileDataP++;
