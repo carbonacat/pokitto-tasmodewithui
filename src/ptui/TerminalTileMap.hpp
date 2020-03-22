@@ -110,80 +110,78 @@ namespace ptui
                     _tileDataRowBase += tileWidth;
                 }
             }
-            if ((y < _offsetY) || (_tileY >= static_cast<int>(rows)))
+            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)))
                 return ;
-            if (!skip)
+                
+            auto tileDataRowBase = _tileDataRowBase; // Won't mutate, will be read in a loop -> stored locally.
+            
+            // Points to the first tile of the row.
+            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
+            std::uint8_t* pixelP = lineBuffer + _indexStart;
+            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+            auto tileSubXStart = _tileSubXStart;
+            
+            if (*tileP == 0)
             {
-                auto tileDataRowBase = _tileDataRowBase; // Won't mutate, will be read in a loop -> stored locally.
+                // Empty first tile. Gonna skip it!
+                // We might have an offset, so we must take account of it (_tileSubXStart).
+                auto initialSkip = tileWidth - tileSubXStart;
                 
-                // Points to the first tile of the row.
-                const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
-                std::uint8_t* pixelP = lineBuffer + _indexStart;
-                std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
-                auto tileSubXStart = _tileSubXStart;
+                tileP++;
+                pixelP += initialSkip;
                 
-                if (*tileP == 0)
-                {
-                    // Empty first tile. Gonna skip it!
-                    // We might have an offset, so we must take account of it (_tileSubXStart).
-                    auto initialSkip = tileWidth - tileSubXStart;
-                    
-                    tileP++;
-                    pixelP += initialSkip;
-                    
-                    // Automatically skip any other empty tiles.
-                    while ((pixelP < pixelPEnd) && (*tileP == 0))
-                    {
-                        tileP++;
-                        pixelP += tileWidth;
-                    }
-                    tileSubXStart = 0;
-                }
-                const unsigned char* tileDataPLast;
-                const unsigned char* tileDataP;
-                
-                // Automatically skip any empty tiles.
+                // Automatically skip any other empty tiles.
                 while ((pixelP < pixelPEnd) && (*tileP == 0))
                 {
                     tileP++;
                     pixelP += tileWidth;
                 }
+                tileSubXStart = 0;
+            }
+            const unsigned char* tileDataPLast;
+            const unsigned char* tileDataP;
+            
+            // Automatically skip any empty tiles.
+            while ((pixelP < pixelPEnd) && (*tileP == 0))
+            {
+                tileP++;
+                pixelP += tileWidth;
+            }
+            
+            // Configures the initial tile.
+            {
+                auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
                 
-                // Configures the initial tile.
+                tileDataP = tileDataPStart + tileSubXStart;
+                tileDataPLast = tileDataPStart + tileWidth - 1;
+            }
+
+            // Iterates over all the concerned pixels.
+            for (; pixelP < pixelPEnd; pixelP++)
+            {
+                auto tilePixel = *tileDataP;
+                
+                if (tilePixel != 0)
+                    *pixelP = tilePixel;
+                if (tileDataP == tileDataPLast)
                 {
-                    auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
+                    // Onto the next tile in the row!
+                    tileP++;
                     
-                    tileDataP = tileDataPStart + tileSubXStart;
+                    // Automatically skip any empty tiles.
+                    while ((pixelP < pixelPEnd) && (*tileP == 0))
+                    {
+                        tileP++;
+                        pixelP += tileWidth;
+                    }
+
+                    auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
+                
+                    tileDataP = tileDataPStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
                 }
-
-                // Iterates over all the concerned pixels.
-                for (; pixelP < pixelPEnd; pixelP++)
-                {
-                    auto tilePixel = *tileDataP;
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                    if (tileDataP == tileDataPLast)
-                    {
-                        // Onto the next tile in the row!
-                        tileP++;
-                        
-                        // Automatically skip any empty tiles.
-                        while ((pixelP < pixelPEnd) && (*tileP == 0))
-                        {
-                            tileP++;
-                            pixelP += tileWidth;
-                        }
-
-                        auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
-                    
-                        tileDataP = tileDataPStart;
-                        tileDataPLast = tileDataPStart + tileWidth - 1;
-                    }
-                    else
-                        tileDataP++;
-                }
+                else
+                    tileDataP++;
             }
         }
         
