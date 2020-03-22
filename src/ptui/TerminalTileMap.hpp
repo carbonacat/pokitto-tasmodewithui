@@ -114,21 +114,47 @@ namespace ptui
                 return ;
             if (!skip)
             {
+                auto tileDataRowBase = _tileDataRowBase; // Won't mutate, will be read in a loop -> stored locally.
+                
                 // Points to the first tile of the row.
                 const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
+                std::uint8_t* pixelP = lineBuffer + _indexStart;
+                std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+                auto tileSubXStart = _tileSubXStart;
+                
+                if (*tileP == 0)
+                {
+                    // Empty first tile. Gonna skip it!
+                    // We might have an offset, so we must take account of it (_tileSubXStart).
+                    auto initialSkip = tileWidth - tileSubXStart;
+                    
+                    tileP++;
+                    pixelP += initialSkip;
+                    
+                    // Automatically skip any other empty tiles.
+                    while ((pixelP < pixelPEnd) && (*tileP == 0))
+                    {
+                        tileP++;
+                        pixelP += tileWidth;
+                    }
+                    tileSubXStart = 0;
+                }
                 const unsigned char* tileDataPLast;
                 const unsigned char* tileDataP;
-                auto tileDataRowBase = _tileDataRowBase; // Won't mutate, but will be read multiple time.
-                auto pixelP = lineBuffer + _indexStart;
-                auto pixelPEnd = lineBuffer + _indexEnd;
                 
+                // Automatically skip any empty tiles.
+                while ((pixelP < pixelPEnd) && (*tileP == 0))
+                {
+                    tileP++;
+                    pixelP += tileWidth;
+                }
+                
+                // Configures the initial tile.
                 {
                     auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
                     
-                    tileDataP = tileDataPStart + _tileSubXStart;
+                    tileDataP = tileDataPStart + tileSubXStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
-                    
-                    // TODO: Can automatically skip 0 tiles!
                 }
 
                 // Iterates over all the concerned pixels.
