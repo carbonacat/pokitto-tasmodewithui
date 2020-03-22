@@ -110,12 +110,12 @@ namespace ptui
                 int tileIndex = _tileIndex(_tileXStart, _tileY);
                 auto tile = _tiles[tileIndex];
                 // TODO: Replace _tileSubY by _tileDataRowOffset.
-                auto tileDataRowOffset = _tileSubY * tileWidth;
+                auto tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
                 const unsigned char* tileDataPLast;
                 const unsigned char* tileDataP;
                 
                 {
-                    auto tileDataPStart = _tilesetData + tile * tileSize + tileDataRowOffset;
+                    auto tileDataPStart = tileDataRowBase + tile * tileSize;
                     
                     tileDataP = tileDataPStart + _tileSubXStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
@@ -139,7 +139,7 @@ namespace ptui
                         tileIndex++;
                         tile = _tiles[tileIndex];
                         
-                        auto tileDataPStart = _tilesetData + tile * tileSize + tileDataRowOffset;
+                        auto tileDataPStart = tileDataRowBase + tile * tileSize;
                     
                         tileDataP = tileDataPStart;
                         tileDataPLast = tileDataPStart + tileWidth - 1;
