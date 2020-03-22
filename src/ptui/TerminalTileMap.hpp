@@ -107,33 +107,48 @@ namespace ptui
                 return ;
             if (!skip)
             {
-                int tileSubX = _tileSubXStart;
                 int tileIndex = _tileIndex(_tileXStart, _tileY);
                 auto tile = _tiles[tileIndex];
+                // TODO: Replace _tileSubY by _tileDataRowOffset.
                 auto tileDataRowOffset = _tileSubY * tileWidth;
-                auto tileData = _tilesetData + tile * tileSize + tileDataRowOffset;
+                const unsigned char* tileDataPLast;
+                const unsigned char* tileDataP;
+                
+                {
+                    auto tileDataPStart = _tilesetData + tile * tileSize + tileDataRowOffset;
+                    
+                    tileDataP = tileDataPStart + _tileSubXStart;
+                    tileDataPLast = tileDataPStart + tileWidth - 1;
+                }
+                int tileSubX = _tileSubXStart;
 
                 // Iterates over all the concerned pixels.
                 for (auto pixelP = lineBuffer + _indexStart, pixelPEnd = lineBuffer + _indexEnd; pixelP < pixelPEnd; pixelP++)
                 {
-                    // TODO: Can be ++'d instead of computed again.
                     // TODO: Can also be skipped completely if empty.
                     if (tile != 0)
                     {
-                        auto tilePixel = tileData[tileSubX];
+                        auto tilePixel = *tileDataP;
                         
                         if (tilePixel != 0)
                             *pixelP = tilePixel;
                     }
-                    if (tileSubX == tileWidth - 1)
+                    if (tileDataP == tileDataPLast)
                     {
                         tileSubX = 0;
                         tileIndex++;
                         tile = _tiles[tileIndex];
-                        tileData = _tilesetData + tile * tileSize + tileDataRowOffset;
+                        
+                        auto tileDataPStart = _tilesetData + tile * tileSize + tileDataRowOffset;
+                    
+                        tileDataP = tileDataPStart;
+                        tileDataPLast = tileDataPStart + tileWidth - 1;
                     }
                     else
+                    {
+                        tileDataP++;
                         tileSubX++;
+                    }
                 }
             }
         }
