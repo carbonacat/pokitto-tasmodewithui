@@ -159,10 +159,12 @@ namespace ptui
             // Iterates over all the concerned pixels.
             for (; pixelP < pixelPEnd; pixelP++)
             {
-                auto tilePixel = *tileDataP;
-                
-                if (tilePixel != 0)
-                    *pixelP = tilePixel;
+                {
+                    auto tilePixel = *tileDataP;
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
+                }
                 if (tileDataP == tileDataPLast)
                 {
                     // Onto the next tile in the row!
