@@ -98,6 +98,7 @@ namespace ptui
             {
                 if (_tileSubY == tileHeight - 1)
                 {
+                    // Onto the next row!
                     _tileSubY = 0;
                     _tileY++;
                     _tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
@@ -113,14 +114,14 @@ namespace ptui
                 return ;
             if (!skip)
             {
-                int tileIndex = _tileIndex(_tileXStart, _tileY);
-                auto tile = _tiles[tileIndex];
+                // Points to the first tile of the row.
+                const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
                 const unsigned char* tileDataPLast;
                 const unsigned char* tileDataP;
                 auto tileDataRowBase = _tileDataRowBase; // Won't mutate, but will be read multiple time.
                 
                 {
-                    auto tileDataPStart = tileDataRowBase + tile * tileSize;
+                    auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
                     
                     tileDataP = tileDataPStart + _tileSubXStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
@@ -130,19 +131,16 @@ namespace ptui
                 for (auto pixelP = lineBuffer + _indexStart, pixelPEnd = lineBuffer + _indexEnd; pixelP < pixelPEnd; pixelP++)
                 {
                     // TODO: Can also be skipped completely if empty.
-                    if (tile != 0)
-                    {
-                        auto tilePixel = *tileDataP;
-                        
-                        if (tilePixel != 0)
-                            *pixelP = tilePixel;
-                    }
+                    auto tilePixel = *tileDataP;
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
                     if (tileDataP == tileDataPLast)
                     {
-                        tileIndex++;
-                        tile = _tiles[tileIndex];
-                        
-                        auto tileDataPStart = tileDataRowBase + tile * tileSize;
+                        // Onto the next tile in the row!
+                        tileP++;
+
+                        auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
                     
                         tileDataP = tileDataPStart;
                         tileDataPLast = tileDataPStart + tileWidth - 1;
