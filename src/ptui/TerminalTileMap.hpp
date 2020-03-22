@@ -101,7 +101,7 @@ namespace ptui
                     // Onto the next row!
                     _tileSubY = 0;
                     _tileY++;
-                    _tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
+                    _tileDataRowBase = _tilesetData;
                 }
                 else
                 {
@@ -125,12 +125,13 @@ namespace ptui
                     
                     tileDataP = tileDataPStart + _tileSubXStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
+                    
+                    // TODO: Can automatically skip 0 tiles!
                 }
 
                 // Iterates over all the concerned pixels.
                 for (auto pixelP = lineBuffer + _indexStart, pixelPEnd = lineBuffer + _indexEnd; pixelP < pixelPEnd; pixelP++)
                 {
-                    // TODO: Can also be skipped completely if empty.
                     auto tilePixel = *tileDataP;
                     
                     if (tilePixel != 0)
@@ -144,6 +145,8 @@ namespace ptui
                     
                         tileDataP = tileDataPStart;
                         tileDataPLast = tileDataPStart + tileWidth - 1;
+                        
+                        // TODO: Can automatically skip 0 tiles!
                     }
                     else
                         tileDataP++;

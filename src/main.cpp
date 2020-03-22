@@ -28,15 +28,13 @@ int main()
     int characterX = 32;
     int characterY = 32;
     int speed=1;
+    int ticks = 0;
     
     // Configuration.
     ptui::tasUITileMap.setTileset(TerminalTileSet);
     
     // Drawing the UI.
     {
-        
-        // ptui::tasUITileMap.setOffset(220 - ptui::TASUITileMap::width, 176 - ptui::TASUITileMap::height);
-        
         const auto tile = 24;
     
         const auto boxX = 0;
@@ -127,6 +125,12 @@ int main()
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
+        ticks++;
+        if (ticks == 120)
+        {
+            printf("fps=%d\n", PC::fps_counter);
+            ticks = 0;
+        }
     }
     
     return 0;
