@@ -365,6 +365,9 @@
 		},
 		"\\src\\ptui\\TASTerminalTileMap.hpp": {
 			"sdcard": false
+		},
+		"\\src\\ptui\\TASTerminalTileMap.cpp": {
+			"sdcard": false
 		}
 	}
 }
