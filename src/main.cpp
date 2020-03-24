@@ -129,7 +129,8 @@ int main()
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
-            ptui::tasUITileMap.shift(-2 + rand() % 5, -2 + rand() % 5);
+            ptui::tasUITileMap.shift(1, 1, ptui::TASUITileMap::columns - 2, ptui::TASUITileMap::rows - 2,
+                                     -2 + rand() % 5, -2 + rand() % 5);
         }
     }
     

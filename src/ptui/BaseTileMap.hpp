@@ -111,64 +111,33 @@ namespace ptui
             std::fill(_tiles.begin(), _tiles.end(), tile);
         }
         
-        // Sets a given area of the map to the given Tile (0 by default).
+        // Same than above, on a defined area.
         // - `firstColumn`, `firstRow`, `lastColumn` and `lastRow` will be clamped.
         // - `lastColumn` and `lastRow` are included.
         // - Negative and reversed boxes are considered as empty ones.
         void clear(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
         {
-            firstColumn = clampColumn(firstColumn);
-            firstRow = clampRow(firstRow);
-            lastColumn = clampColumn(lastColumn);
-            lastRow = clampRow(lastRow);
-            // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
-            for (int row = firstRow; row <= lastRow; row++)
-                for (int column = firstColumn; column <= lastColumn; column++)
-                    set(column, row, tile);
+            clearUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                        tile);
         }
         
         // Shift the whole map by `shiftedColumns` columns and `shiftedRows` rows.
         // - "Introduced" Tiles will be *left as is*.
         void shift(int shiftedColumns, int shiftedRows) noexcept
         {
-            int firstColumn;
-            int endColumn;
-            int columnIncrement;
-            int firstRow;
-            int endRow;
-            int rowIncrement;
-            
-            if (shiftedColumns < 0)
-            {
-                // We start from the last column.
-                firstColumn = columns - 1;
-                endColumn = -shiftedColumns - 1;
-                columnIncrement = -1;
-            }
-            else
-            {
-                // We start from the first column.
-                firstColumn = 0;
-                endColumn = columns - shiftedColumns;
-                columnIncrement = 1;
-            }
-            if (shiftedRows < 0)
-            {
-                // We start from the last column.
-                firstRow = rows - 1;
-                endRow = -shiftedRows - 1;
-                rowIncrement = -1;
-            }
-            else
-            {
-                // We start from the first column.
-                firstRow = 0;
-                endRow = rows - shiftedRows;
-                rowIncrement = 1;
-            }
-            for (int row = firstRow; row != endRow; row += rowIncrement)
-                for (int column = firstColumn; column != endColumn; column += columnIncrement)
-                    set(column, row, get(column + shiftedColumns, row + shiftedRows));
+            shiftUnsafe(0, 0, columns - 1, rows - 1,
+                        shiftedColumns, shiftedRows);
+        }
+        
+        // Same than above, on a given area.
+        // - `firstColumn`, `firstRow`, `lastColumn` and `lastRow` will be clamped.
+        // - `lastColumn` and `lastRow` are included.
+        // - Negative and reversed boxes are considered as empty ones.
+        void shift(int firstColumn, int firstRow, int lastColumn, int lastRow,
+                   int shiftedColumns, int shiftedRows) noexcept
+        {
+            shiftUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                        shiftedColumns, shiftedRows);
         }
         
         
@@ -300,6 +269,59 @@ namespace ptui
             return (column >= 0) && (column < columns) && (row >= 0) && (row < rows);
         }
         
+    protected: // Unsafe implementations.
+        // shift, but columns & rows are considered valid within the grid.
+        void clearUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
+        {
+            // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
+            for (int row = firstRow; row <= lastRow; row++)
+                for (int column = firstColumn; column <= lastColumn; column++)
+                    set(column, row, tile);
+        }
+        
+        // shift, but columns & rows are considered valid within the grid.
+        void shiftUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow,
+                         int shiftedColumns, int shiftedRows) noexcept
+        {
+            int shiftFirstColumn;
+            int shiftEndColumn;
+            int shiftColumnIncrement;
+            int shiftFirstRow;
+            int shiftEndRow;
+            int shiftRowIncrement;
+            
+            if (shiftedColumns < 0)
+            {
+                // We start from the last column.
+                shiftFirstColumn = lastColumn;
+                shiftEndColumn = firstColumn - shiftedColumns - 1;
+                shiftColumnIncrement = -1;
+            }
+            else
+            {
+                // We start from the first column.
+                shiftFirstColumn = firstColumn;
+                shiftEndColumn = lastColumn + 1 - shiftedColumns;
+                shiftColumnIncrement = 1;
+            }
+            if (shiftedRows < 0)
+            {
+                // We start from the last column.
+                shiftFirstRow = lastRow;
+                shiftEndRow = firstRow - shiftedRows - 1;
+                shiftRowIncrement = -1;
+            }
+            else
+            {
+                // We start from the first column.
+                shiftFirstRow = firstRow;
+                shiftEndRow = lastRow + 1 - shiftedRows;
+                shiftRowIncrement = 1;
+            }
+            for (int row = shiftFirstRow; row != shiftEndRow; row += shiftRowIncrement)
+                for (int column = shiftFirstColumn; column != shiftEndColumn; column += shiftColumnIncrement)
+                    set(column, row, get(column + shiftedColumns, row + shiftedRows));
+        }
     
     private:
         using Tiles = std::array<Tile, columns * rows>;
