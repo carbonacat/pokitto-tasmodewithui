@@ -84,16 +84,22 @@ namespace ptui
             else if (firstColumn < lastColumn)
             {
                 int gaugeWidth = lastColumn - firstColumn + 1;
-                int gaugeExtendedMiddleCapacity = (gaugeWidth - 2) * gaugeMiddleCapacity;
-                int gaugeCapacity = gaugeLeftCapacity + gaugeExtendedMiddleCapacity + gaugeRightCapacity;
+                int gaugeMiddleWidth = gaugeWidth - 2;
+                int gaugeCapacity = gaugeLeftCapacity + gaugeMiddleWidth * gaugeMiddleCapacity + gaugeRightCapacity;
                 int filling = (current * gaugeCapacity + max / 2) / max;
                 
+                // Left part.
                 this->set(firstColumn, row, TilesetDefinition::gaugeLeftEmpty + std::min(filling, gaugeLeftCapacity));
                 filling -= gaugeLeftCapacity;
                 
-                // TODO: Middle part.
-                filling -= gaugeExtendedMiddleCapacity;
+                // Middle parts.
+                for (int middleColumn = firstColumn + 1; middleColumn < lastColumn; middleColumn++)
+                {
+                    this->set(middleColumn, row, TilesetDefinition::gaugeMiddleEmpty + std::max(0, std::min(filling, gaugeMiddleCapacity)));
+                    filling -= gaugeMiddleCapacity;
+                }
                 
+                // Right parts.
                 this->set(lastColumn, row, TilesetDefinition::gaugeRightEmpty + std::max(0, std::min(filling, gaugeRightCapacity)));
             }
         }

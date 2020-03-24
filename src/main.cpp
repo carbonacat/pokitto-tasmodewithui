@@ -121,13 +121,21 @@ int main()
         }
         ptui::tasUITileMap.set(1, 1, '0' + PC::fps_counter / 10);
         ptui::tasUITileMap.set(2, 1, '0' + PC::fps_counter % 10);
-        ptui::tasUITileMap.drawGauge(1, 2, 2,
-                                     ticks, 14);
+        ptui::tasUITileMap.drawGauge(1, 1, 2,
+                                     ticks, 60);
+        ptui::tasUITileMap.drawGauge(1, 2, 3,
+                                     ticks, 60);
+        ptui::tasUITileMap.drawGauge(1, 3, 4,
+                                     ticks, 60);
+        ptui::tasUITileMap.drawGauge(1, 10, 5,
+                                     ticks, 60);
+        ptui::tasUITileMap.drawGauge(1, 35, 5,
+                                     ticks, 60);
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
         ticks++;
-        if (ticks == 15)
+        if (ticks == 60)
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
