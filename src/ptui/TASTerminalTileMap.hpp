@@ -3,7 +3,7 @@
 
 #   include "Pokitto.h"
 
-#   include "ptui/BaseTileMap.hpp"
+#   include "ptui/UITileMap.hpp"
 
 
 namespace ptui
@@ -19,7 +19,7 @@ namespace ptui
     constexpr unsigned ttmColumns = ttmFullDisplayColumns;
     constexpr unsigned ttmRows = ttmFullDisplayRows;
     
-    using TASUITileMap = BaseTileMap<ttmColumns, ttmRows, ttmTileWidth, ttmTileHeight, lcdWidth>;
+    using TASUITileMap = UITileMap<ttmColumns, ttmRows, ttmTileWidth, ttmTileHeight, lcdWidth>;
     
     extern TASUITileMap tasUITileMap;
 }

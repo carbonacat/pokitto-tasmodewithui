@@ -121,6 +121,8 @@ int main()
         }
         ptui::tasUITileMap.set(1, 1, '0' + PC::fps_counter / 10);
         ptui::tasUITileMap.set(2, 1, '0' + PC::fps_counter % 10);
+        ptui::tasUITileMap.drawGauge(1, 2, 2,
+                                     ticks, 14);
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
@@ -129,8 +131,8 @@ int main()
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
-            ptui::tasUITileMap.shift(1, 1, ptui::TASUITileMap::columns - 2, ptui::TASUITileMap::rows - 2,
-                                     -2 + rand() % 5, -2 + rand() % 5);
+            // ptui::tasUITileMap.shift(1, 1, ptui::TASUITileMap::columns - 2, ptui::TASUITileMap::rows - 2,
+            //                          -2 + rand() % 5, -2 + rand() % 5);
         }
     }
     
