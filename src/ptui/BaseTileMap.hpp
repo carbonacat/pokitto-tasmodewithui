@@ -127,8 +127,49 @@ namespace ptui
                     set(column, row, tile);
         }
         
-        // Shift the whole
-        void shift(int columns, int rows) noexcept;
+        // Shift the whole map by `shiftedColumns` columns and `shiftedRows` rows.
+        // - "Introduced" Tiles will be *left as is*.
+        void shift(int shiftedColumns, int shiftedRows) noexcept
+        {
+            int firstColumn;
+            int endColumn;
+            int columnIncrement;
+            int firstRow;
+            int endRow;
+            int rowIncrement;
+            
+            if (shiftedColumns < 0)
+            {
+                // We start from the last column.
+                firstColumn = columns - 1;
+                endColumn = -shiftedColumns - 1;
+                columnIncrement = -1;
+            }
+            else
+            {
+                // We start from the first column.
+                firstColumn = 0;
+                endColumn = columns - shiftedColumns;
+                columnIncrement = 1;
+            }
+            if (shiftedRows < 0)
+            {
+                // We start from the last column.
+                firstRow = rows - 1;
+                endRow = -shiftedRows - 1;
+                rowIncrement = -1;
+            }
+            else
+            {
+                // We start from the first column.
+                firstRow = 0;
+                endRow = rows - shiftedRows;
+                rowIncrement = 1;
+            }
+            for (int row = firstRow; row != endRow; row += rowIncrement)
+                for (int column = firstColumn; column != endColumn; column += columnIncrement)
+                    set(column, row, get(column + shiftedColumns, row + shiftedRows));
+        }
         
         
     public: // Rendering.
@@ -244,17 +285,17 @@ namespace ptui
     public: // Coords manipulation.
         // Updates the given grid coordinates so they're clamped inside the box (e.g. negative will be zero'd).
         template<typename CoordsType = int>
-        CoordsType clampColumn(CoordsType column) noexcept
+        CoordsType clampColumn(CoordsType column) const noexcept
         {
             return std::max<CoordsType>(0, std::min<CoordsType>(column, columns - 1));
         }
         template<typename CoordsType = int>
-        CoordsType clampRow(CoordsType row) noexcept
+        CoordsType clampRow(CoordsType row) const noexcept
         {
             return std::max<CoordsType>(0, std::min<CoordsType>(row, rows - 1));
         }
         template<typename CoordsType = int>
-        bool areCoordsValid(CoordsType column, CoordsType row) noexcept
+        bool areCoordsValid(CoordsType column, CoordsType row) const noexcept
         {
             return (column >= 0) && (column < columns) && (row >= 0) && (row < rows);
         }

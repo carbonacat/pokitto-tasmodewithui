@@ -125,11 +125,11 @@ int main()
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
         ticks++;
-        if (ticks == 120)
+        if (ticks == 15)
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
-            ptui::tasUITileMap.clear(-1, -1, 999, 999, 127);
+            ptui::tasUITileMap.shift(-2 + rand() % 5, -2 + rand() % 5);
         }
     }
     
