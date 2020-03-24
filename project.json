@@ -368,6 +368,21 @@
 		},
 		"\\src\\ptui\\TASTerminalTileMap.cpp": {
 			"sdcard": false
+		},
+		"\\src\\ptui\\BaseTileMap.hpp": {
+			"sdcard": false
+		},
+		"\\src\\ptui\\UITileMap.hpp": {
+			"sdcard": false
+		},
+		"\\src\\ptui\\TASUISystem.hpp": {
+			"sdcard": false
+		},
+		"\\src\\ptui\\UISystem.hpp": {
+			"sdcard": false
 		}
+	},
+	"BUILDFlags": {
+		"Pokitto": {}
 	}
 }

@@ -34,7 +34,6 @@ int main()
     ptui::tasUITileMap.setTileset(TerminalTileSet);
     
     // Drawing the UI.
-    if (false)
     {
         const auto tile = 24;
     
@@ -43,34 +42,34 @@ int main()
         const auto boxXLast = ptui::TASUITileMap::columns - 1;
         const auto boxYLast = ptui::TASUITileMap::rows - 1;
     
-        ptui::tasUITileMap.setTile(boxX, boxY, 24);
-        ptui::tasUITileMap.setTile(boxX, boxYLast, 30);
-        ptui::tasUITileMap.setTile(boxXLast, boxY, 26);
-        ptui::tasUITileMap.setTile(boxXLast, boxYLast, 28);
+        ptui::tasUITileMap.set(boxX, boxY, 24);
+        ptui::tasUITileMap.set(boxX, boxYLast, 30);
+        ptui::tasUITileMap.set(boxXLast, boxY, 26);
+        ptui::tasUITileMap.set(boxXLast, boxYLast, 28);
         for (int i = boxX + 1; i <= boxXLast - 1; i++)
         {
-            ptui::tasUITileMap.setTile(i, boxY, 25);
-            ptui::tasUITileMap.setTile(i, boxYLast, 29);
+            ptui::tasUITileMap.set(i, boxY, 25);
+            ptui::tasUITileMap.set(i, boxYLast, 29);
         }
         for (int j = boxY + 1; j <= boxYLast - 1; j++)
         {
-            ptui::tasUITileMap.setTile(boxX, j, 31);
-            ptui::tasUITileMap.setTile(boxXLast, j, 27);
+            ptui::tasUITileMap.set(boxX, j, 31);
+            ptui::tasUITileMap.set(boxXLast, j, 27);
         }
         for (int i = boxX + 1; i <= boxXLast - 1; i++)
             for (int j = boxY + 1; j <= boxYLast - 1; j++)
             {
-                ptui::tasUITileMap.setTile(i, j, 32);
+                ptui::tasUITileMap.set(i, j, 32);
             }
-        ptui::tasUITileMap.setTile(boxX + 1, boxY + 1, '1');
-        ptui::tasUITileMap.setTile(boxXLast - 1, boxY + 1, '1');
-        ptui::tasUITileMap.setTile(boxX + 1, boxYLast - 1, '1');
-        ptui::tasUITileMap.setTile(boxXLast - 1, boxYLast - 1, '1');
+        ptui::tasUITileMap.set(boxX + 1, boxY + 1, '1');
+        ptui::tasUITileMap.set(boxXLast - 1, boxY + 1, '1');
+        ptui::tasUITileMap.set(boxX + 1, boxYLast - 1, '1');
+        ptui::tasUITileMap.set(boxXLast - 1, boxYLast - 1, '1');
         
         
-        ptui::tasUITileMap.setTile((boxX + boxXLast)/2 - 1, (boxY + boxYLast)/2, 'O');
-        ptui::tasUITileMap.setTile((boxX + boxXLast)/2, (boxY + boxYLast)/2, 'N');
-        ptui::tasUITileMap.setTile((boxX + boxXLast)/2 + 1, (boxY + boxYLast)/2, 'E');
+        ptui::tasUITileMap.set((boxX + boxXLast)/2 - 1, (boxY + boxYLast)/2, 'O');
+        ptui::tasUITileMap.set((boxX + boxXLast)/2, (boxY + boxYLast)/2, 'N');
+        ptui::tasUITileMap.set((boxX + boxXLast)/2 + 1, (boxY + boxYLast)/2, 'E');
     }
     while (PC::isRunning())
     {
@@ -120,8 +119,8 @@ int main()
                 }
             }
         }
-        ptui::tasUITileMap.setTile(1, 1, '0' + PC::fps_counter / 10);
-        ptui::tasUITileMap.setTile(2, 1, '0' + PC::fps_counter % 10);
+        ptui::tasUITileMap.set(1, 1, '0' + PC::fps_counter / 10);
+        ptui::tasUITileMap.set(2, 1, '0' + PC::fps_counter % 10);
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
@@ -130,6 +129,7 @@ int main()
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
+            ptui::tasUITileMap.clear(-1, -1, 999, 999, 127);
         }
     }
     

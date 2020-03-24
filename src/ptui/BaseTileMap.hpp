@@ -1,16 +1,27 @@
-#ifndef PTUI_TERMINALTILEMAP_HPP
-#   define PTUI_TERMINALTILEMAP_HPP
+#ifndef PTUI_BASETILEMAP_HPP
+#   define PTUI_BASETILEMAP_HPP
 
 #   include <array>
 
 
 namespace ptui
 {
-    // A TileMap that can be used as a terminal, with printing capabilities, scrolling, etc.
+    // A 8BPP TileMap implementation.
+    // Provides the following services:
+    // - Set/Get an arbitrary tile. [Tiles Access]
+    // - Clear. [Mass Tiles Access]
+    // - Shift. [Mass Tiles Access]
+    // - Change the Tileset. [Configurations]
+    // - Set/Get the offset to the Screen. [Configurations]
+    // - Render a scanline using the provided Tileset and offset. [Rendering]
+    //
+    // - column and row are used for the grid coordinates' names.
+    // - x and y are used as the pixel/display coordinates' name.
+    // For a more interesting implementation, see UITileMap.
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
              unsigned lineWidthP>
-    class TerminalTileMap
+    class BaseTileMap
     {
     public: // Types & Constants.
         using Tile = std::uint8_t;
@@ -27,6 +38,7 @@ namespace ptui
         
     public: // Configurations.
         // Changes the origin to the top-left of the display.
+        // - 0, 0 means the top-left pixel of the map will be the same than the top-left pixel of the display.
         void setOffset(int offsetX, int offsetY) noexcept
         {
             _offsetX = offsetX;
@@ -73,21 +85,58 @@ namespace ptui
         }
         
         
-    public: // Drawing & Printing.
+    public: // Tiles Access.
         // Changes a given tile in this map.
-        // Safe - x & y are checked.
-        void setTile(int x, int y, Tile tile) noexcept
+        // - Safe - If column or row are outside the map, nothing will happen.
+        void set(int column, int row, Tile tile) noexcept
         {
-            if ((x < 0) || (x >= columns) || (y < 0) || (y >= rows))
-                return;
-            _tiles[_tileIndex(x, y)] = tile;
+            if (areCoordsValid(column, row))
+                _tiles[_tileIndex(column, row)] = tile;
         }
+        
+        // Returns a given tile in this map.
+        // - Safe - If column or row are outside the map, `outsideTile` is returned.
+        Tile get(int column, int row, Tile outsideTile = 0) const noexcept
+        {
+            if (areCoordsValid(column, row))
+                return _tiles[_tileIndex(column, row)];
+            return outsideTile;
+        }
+        
+    
+    public: // Mass Tiles Access.
+        // Sets the whole map to the given Tile (Default Tile will make it blank).
+        void clear(Tile tile = 0) noexcept
+        {
+            std::fill(_tiles.begin(), _tiles.end(), tile);
+        }
+        
+        // Sets a given area of the map to the given Tile (0 by default).
+        // - `firstColumn`, `firstRow`, `lastColumn` and `lastRow` will be clamped.
+        // - `lastColumn` and `lastRow` are included.
+        // - Negative and reversed boxes are considered as empty ones.
+        void clear(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
+        {
+            firstColumn = clampColumn(firstColumn);
+            firstRow = clampRow(firstRow);
+            lastColumn = clampColumn(lastColumn);
+            lastRow = clampRow(lastRow);
+            // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
+            for (int row = firstRow; row <= lastRow; row++)
+                for (int column = firstColumn; column <= lastColumn; column++)
+                    set(column, row, tile);
+        }
+        
+        // Shift the whole
+        void shift(int columns, int rows) noexcept;
         
         
     public: // Rendering.
         // Renders a single line.
         void fillLine(std::uint8_t* lineBuffer, int y, bool skip) noexcept
         {
+            // Row initialization / change.
+            
             if (y == 0)
             {
                 _tileY = _tileYStart;
@@ -112,9 +161,13 @@ namespace ptui
             }
             if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)))
                 return ;
-                
+            
+            // Scanline rendition.
+            
             auto tileDataRowBase = _tileDataRowBase; // Won't mutate, will be read in a loop -> stored locally.
             
+            // TODO: For a given row, this code's execution is the same, except for the tileDataP and tileDataPLast which are offset by one tile's line each time.
+            // TODO: Could be moved into the row change section above, at the cost of RAM.
             // Points to the first tile of the row.
             const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
             std::uint8_t* pixelP = lineBuffer + _indexStart;
@@ -155,7 +208,7 @@ namespace ptui
                 tileDataP = tileDataPStart + tileSubXStart;
                 tileDataPLast = tileDataPStart + tileWidth - 1;
             }
-
+            
             // Iterates over all the concerned pixels.
             for (; pixelP < pixelPEnd; pixelP++)
             {
@@ -176,9 +229,9 @@ namespace ptui
                         tileP++;
                         pixelP += tileWidth;
                     }
-
+                    
                     auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
-                
+                    
                     tileDataP = tileDataPStart;
                     tileDataPLast = tileDataPStart + tileWidth - 1;
                 }
@@ -187,6 +240,26 @@ namespace ptui
             }
         }
         
+        
+    public: // Coords manipulation.
+        // Updates the given grid coordinates so they're clamped inside the box (e.g. negative will be zero'd).
+        template<typename CoordsType = int>
+        CoordsType clampColumn(CoordsType column) noexcept
+        {
+            return std::max<CoordsType>(0, std::min<CoordsType>(column, columns - 1));
+        }
+        template<typename CoordsType = int>
+        CoordsType clampRow(CoordsType row) noexcept
+        {
+            return std::max<CoordsType>(0, std::min<CoordsType>(row, rows - 1));
+        }
+        template<typename CoordsType = int>
+        bool areCoordsValid(CoordsType column, CoordsType row) noexcept
+        {
+            return (column >= 0) && (column < columns) && (row >= 0) && (row < rows);
+        }
+        
+    
     private:
         using Tiles = std::array<Tile, columns * rows>;
     
@@ -220,4 +293,4 @@ namespace ptui
 }
 
 
-#endif // PTUI_TERMINALTILEMAP_HPP
+#endif // PTUI_BASETILEMAP_HPP
