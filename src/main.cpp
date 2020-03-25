@@ -30,6 +30,8 @@ int main()
     int speed=1;
     int ticks = 0;
     
+    int rNmb = 0;
+    
     // Configuration.
     ptui::tasUITileMap.setTileset(TerminalTileSet);
     ptui::tasUITileMap.setOffset(-1, -4);
@@ -84,8 +86,21 @@ int main()
             }
         }
         ptui::tasUITileMap.setCursor(1, 1);
-        ptui::tasUITileMap.printChar('0' + PC::fps_counter / 10);
-        ptui::tasUITileMap.printChar('0' + PC::fps_counter % 10);
+        ptui::tasUITileMap.clear(1, 1, 1, 3);
+        ptui::tasUITileMap.printInteger(PC::fps_counter);
+        ptui::tasUITileMap.setCursor(1, 7);
+        ptui::tasUITileMap.clear(1, 7, 20, 8);
+        
+        if (ticks % 50 == 0)
+        {
+            rNmb = (rand() % 10 - 5) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1);
+        }
+        ptui::tasUITileMap.printInteger(rNmb, 4, '.');
+        
+        ptui::tasUITileMap.setCursor(2, 7);
+        ptui::tasUITileMap.printInteger(134, 4, '.');
+        ptui::tasUITileMap.printChar('/');
+        ptui::tasUITileMap.printInteger(9999, 4, '.');
         
         
         if ((ticks >= 60) && (ticks <= 120))

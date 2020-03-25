@@ -233,12 +233,40 @@ namespace ptui
                 printChar(*charP);
         }
         
-        // Prints a string.
+        // Prints a string, but truncated up to limit.
         void printString(const char* string, int limit) noexcept
         {
             for (auto charP = string; (*charP != 0) && (limit > 0); charP++, limit--)
                 printChar(*charP);
         }
+        
+        // Prints a number with the given radix.
+        void printInteger(int number, int padding = 0, char paddingChar = ' ', int radix = 10) noexcept
+        {
+            padding--;
+            if (std::abs(number) >= radix)
+            {
+                auto upperNumber = number / radix;
+                
+                number = std::abs(number - upperNumber * radix);
+                printInteger(upperNumber, padding, paddingChar, radix);
+                padding = 0;
+            }
+            if (number < 0)
+                padding--;
+            for (; padding > 0; padding--)
+                printChar(paddingChar);
+            if (number < 0)
+            {
+                printChar('-');
+                number = -number;
+            }
+            if (number < 10)
+                printChar('0' + number);
+            else
+                printChar('a' + number - 10);
+        }
+        
         
     private:
         short _cursorColumn = 0;
