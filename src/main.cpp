@@ -7,6 +7,20 @@
 #include "maps.h"
 #include "ptui/TASTerminalTileMap.hpp"
 
+int transition = 0;
+
+void GameFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    int yMin = 88 - transition * 2;
+    int yMax = 88 + transition * 2;
+    bool transitioning = (yMin > (int)y) || ((int)y > yMax);
+    
+    TAS::BGTileFiller(line, y, skip);
+    TAS::SpriteFiller(line, y, skip || transitioning);
+    ptui::TerminalTMFiller(line, y, skip);
+    if (transitioning)
+        std::fill(line, line + PROJ_LCDWIDTH, 0);
+}
 
 int main()
 {
@@ -200,6 +214,7 @@ int main()
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
         }
+        transition++;
     }
     
     return 0;
