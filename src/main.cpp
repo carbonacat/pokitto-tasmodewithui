@@ -149,23 +149,23 @@ int main()
         
         if (ticks > 16)
         {
-            ptui::tasUITileMap.drawBox(13, 2, 22, 6);
+            ptui::tasUITileMap.drawBox(2, 2, 35, 6);
             
-            ptui::tasUITileMap.setCursorBoundingBox(14, 3, 21, 6);
-            ptui::tasUITileMap.setCursor(14, 3);
+            ptui::tasUITileMap.setCursorBoundingBox(3, 3, 34, 5);
+            ptui::tasUITileMap.setCursor(3, 3);
             
-            ptui::tasUITileMap.printString("i\tii\tiii\tiiii\t\n----");
+            ptui::tasUITileMap.printString("Life... dreams... hope...\n    \n\nWhere do they come from?\nAnd where do they go?\n     \n\nSuch meaningless things...\nI'll destroy them all!    ", (ticks - 16) / 2);
             
             ptui::tasUITileMap.resetCursorBoundingBox();
         }
         else
-            ptui::tasUITileMap.clear(13, 2, 22, 6);
+            ptui::tasUITileMap.clear(2, 2, 35, 6);
         
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
         ticks++;
-        if (ticks == 180)
+        if (ticks == 350)
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;

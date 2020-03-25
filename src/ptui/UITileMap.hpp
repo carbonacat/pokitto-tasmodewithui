@@ -233,6 +233,13 @@ namespace ptui
                 printChar(*charP);
         }
         
+        // Prints a string.
+        void printString(const char* string, int limit) noexcept
+        {
+            for (auto charP = string; (*charP != 0) && (limit > 0); charP++, limit--)
+                printChar(*charP);
+        }
+        
     private:
         short _cursorColumn = 0;
         short _cursorRow = 0;

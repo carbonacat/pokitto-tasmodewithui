@@ -292,35 +292,35 @@ namespace ptui
             
             if (shiftedColumns < 0)
             {
-                // We start from the last column.
-                shiftFirstColumn = lastColumn;
-                shiftEndColumn = firstColumn - shiftedColumns - 1;
-                shiftColumnIncrement = -1;
+                // We start from the first column.
+                shiftFirstColumn = firstColumn;
+                shiftEndColumn = lastColumn + 1 + shiftedColumns;
+                shiftColumnIncrement = 1;
             }
             else
             {
-                // We start from the first column.
-                shiftFirstColumn = firstColumn;
-                shiftEndColumn = lastColumn + 1 - shiftedColumns;
-                shiftColumnIncrement = 1;
+                // We start from the last column.
+                shiftFirstColumn = lastColumn;
+                shiftEndColumn = firstColumn + shiftedColumns - 1;
+                shiftColumnIncrement = -1;
             }
             if (shiftedRows < 0)
             {
-                // We start from the last column.
-                shiftFirstRow = lastRow;
-                shiftEndRow = firstRow - shiftedRows - 1;
-                shiftRowIncrement = -1;
+                // We start from the first column.
+                shiftFirstRow = firstRow;
+                shiftEndRow = lastRow + 1 + shiftedRows;
+                shiftRowIncrement = 1;
             }
             else
             {
-                // We start from the first column.
-                shiftFirstRow = firstRow;
-                shiftEndRow = lastRow + 1 - shiftedRows;
-                shiftRowIncrement = 1;
+                // We start from the last column.
+                shiftFirstRow = lastRow;
+                shiftEndRow = firstRow + shiftedRows - 1;
+                shiftRowIncrement = -1;
             }
             for (int row = shiftFirstRow; row != shiftEndRow; row += shiftRowIncrement)
                 for (int column = shiftFirstColumn; column != shiftEndColumn; column += shiftColumnIncrement)
-                    set(column, row, get(column + shiftedColumns, row + shiftedRows));
+                    set(column, row, get(column - shiftedColumns, row - shiftedRows));
         }
     
     private:
