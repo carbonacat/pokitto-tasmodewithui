@@ -30,8 +30,6 @@ int main()
     int speed=1;
     int ticks = 0;
     
-    int rNmb = 0;
-    
     // Configuration.
     ptui::tasUITileMap.setTileset(TerminalTileSet);
     ptui::tasUITileMap.setOffset(-1, -4);
@@ -88,19 +86,6 @@ int main()
         ptui::tasUITileMap.setCursor(1, 1);
         ptui::tasUITileMap.clear(1, 1, 1, 3);
         ptui::tasUITileMap.printInteger(PC::fps_counter);
-        ptui::tasUITileMap.setCursor(1, 7);
-        ptui::tasUITileMap.clear(1, 7, 20, 8);
-        
-        if (ticks % 50 == 0)
-        {
-            rNmb = (rand() % 10 - 5) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1) * (rand() % 10 + 1);
-        }
-        ptui::tasUITileMap.printInteger(rNmb, 4, '.');
-        
-        ptui::tasUITileMap.setCursor(2, 7);
-        ptui::tasUITileMap.printInteger(134, 4, '.');
-        ptui::tasUITileMap.printChar('/');
-        ptui::tasUITileMap.printInteger(9999, 4, '.');
         
         
         if ((ticks >= 60) && (ticks <= 120))
@@ -148,20 +133,50 @@ int main()
         }
         else
         {
-            ptui::tasUITileMap.drawBox(-1, 20, 37, 30);
-            ptui::tasUITileMap.drawGauge(29, 35, 21, ticks, 59);
-            ptui::tasUITileMap.setCursor(22, 21);
+            ptui::tasUITileMap.clear(2, 20, 20, 20);
+            
+            ptui::tasUITileMap.drawBox(-1, 21, 37, 30);
+            
+            ptui::tasUITileMap.setCursor(17, 22);
             ptui::tasUITileMap.printString("Mareve");
+            
+            ptui::tasUITileMap.setCursor(26, 22);
+            ptui::tasUITileMap.printInteger(133, 4);
+            
+            ptui::tasUITileMap.drawGauge(31, 35, 22, ticks, 59);
+            
+            ptui::tasUITileMap.setCursor(17, 24);
+            ptui::tasUITileMap.printString("Delirio");
+            
+            ptui::tasUITileMap.setCursor(26, 24);
+            ptui::tasUITileMap.printInteger(6894, 4);
+            
+            ptui::tasUITileMap.drawGauge(31, 35, 24, ticks, 59);
+            
+            ptui::tasUITileMap.setCursor(17, 26);
+            ptui::tasUITileMap.printString("Matti");
+            
+            ptui::tasUITileMap.setCursor(26, 26);
+            ptui::tasUITileMap.printInteger(9999, 4);
+            
+            ptui::tasUITileMap.drawGauge(31, 35, 26, ticks, 59);
+            
+            ptui::tasUITileMap.setCursor(17, 28);
+            ptui::tasUITileMap.printString("???");
+            
+            ptui::tasUITileMap.setCursor(26, 28);
+            ptui::tasUITileMap.printInteger(543, 4);
+            
+            ptui::tasUITileMap.drawGauge(31, 35, 28, ticks, 59);
         }
         if (ticks > 120)
         {
-            ptui::tasUITileMap.drawGauge(29, 35, 21, 0, 59);
+            ptui::tasUITileMap.drawGauge(31, 35, 22, 0, 59);
+            ptui::tasUITileMap.drawGauge(31, 35, 24, 0, 59);
+            ptui::tasUITileMap.drawGauge(31, 35, 26, 0, 59);
+            ptui::tasUITileMap.drawGauge(31, 35, 28, 0, 59);
         }
-        bool ready = (ticks > 60) && (ticks < 120);
-        
-        ptui::tasUITileMap.drawCheckbox(21, 21, ready);
-        
-        
+
         if (ticks > 16)
         {
             ptui::tasUITileMap.drawBox(2, 2, 35, 6);
