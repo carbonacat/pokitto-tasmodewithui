@@ -35,6 +35,8 @@ namespace ptui
         static constexpr auto boxBottomLeft = 30;
         static constexpr auto boxLeft = 31;
         static constexpr auto boxMiddle = asciiSpace;
+        
+        static constexpr auto tabColumns = 4;
     };
     
     // An extension of BaseTileMap revolving around a UI TileSet.
@@ -145,6 +147,99 @@ namespace ptui
             // Inside.
             this->clear(firstColumn + 1, firstRow + 1, lastColumn - 1, lastRow - 1, TilesetDefinition::boxMiddle);
         }
+        
+        
+    public: // Terminal.
+        // Sets where to draw the next character.
+        // - Clamped to the Cursor Bounding Box.
+        void setCursor(int cursorColumn, int cursorRow) noexcept
+        {
+            _cursorColumn = std::max<int>(_cursorFirstColumn, std::min<int>(cursorColumn, _cursorLastColumn));
+            _cursorRow = std::max<int>(_cursorFirstRow, std::min<int>(cursorRow, _cursorLastRow));
+        }
+        
+        // Changes the cursor's bounding box.
+        // - Cursor's position will be updated to fit inside.
+        // - Negative boxes
+        void setCursorBoundingBox(int cursorFirstColumn, int cursorFirstRow, int cursorLastColumn, int cursorLastRow) noexcept
+        {
+            _cursorFirstColumn = cursorFirstColumn;
+            _cursorFirstRow = cursorFirstRow;
+            _cursorLastColumn = std::max<int>(cursorFirstColumn, cursorLastColumn);
+            _cursorLastRow = std::max<int>(cursorFirstRow, cursorLastRow);
+            setCursor(_cursorColumn, _cursorRow);
+        }
+        
+        // Changes the Cursor Bounding Box back to the default.
+        // - Cursor's position will be updated to fit inside.
+        void resetCursorBoundingBox() noexcept
+        {
+            _cursorFirstColumn = 0;
+            _cursorFirstRow = 0;
+            _cursorLastColumn = this->columns - 1;
+            _cursorLastRow = this->rows - 1;
+            setCursor(_cursorColumn, _cursorRow);
+        }
+    
+        // Prints a single character.
+        // - All the Control characters are ignored, besides newlines and tabs.
+        // - Tabs are based on the TilesetDefinition's `tabColumns` characters wide columns, starting from the bound's firstColumn.
+        // - If printing such a char would go above the last column, then a newline is generated before.
+        //   - If `c` was a space, it won't be printed and transformed instead into the said newline.
+        // - Note: This is not suitable for setting a tile to a given value. Use `set()` instead.
+        void printChar(char c) noexcept
+        {
+            if (c == '\n')
+            {
+                // Newlines gets the cursor back to the first column, and to the next row.
+                _cursorColumn = _cursorFirstColumn;
+                _cursorRow++;
+                if (_cursorRow > _cursorLastRow)
+                {
+                    // Autoscroll.
+                    this->shift(_cursorFirstColumn, _cursorFirstRow, _cursorLastColumn, _cursorLastRow,
+                          0, -1);
+                    this->clear(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle);
+                    _cursorRow = _cursorLastRow;
+                }
+            }
+            else if (c == '\t')
+            {
+                int nextColumn = _cursorFirstColumn + ((_cursorColumn - _cursorFirstColumn) / TilesetDefinition::tabColumns + 1) * TilesetDefinition::tabColumns;
+                
+                if (nextColumn > _cursorLastRow)
+                    printChar('\n');
+                else while (_cursorColumn < nextColumn)
+                    printChar(' ');
+            }
+            else if (c >= ' ')
+            {
+                if (_cursorColumn > _cursorLastColumn)
+                {
+                    printChar('\n');
+                    // Spaces are transformed into the generated newline.
+                    if (c == ' ')
+                        return ;
+                }
+                this->set(_cursorColumn, _cursorRow, c - ' ' + TilesetDefinition::asciiSpace);
+                _cursorColumn++;
+            }
+        }
+        
+        // Prints a string.
+        void printString(const char* string) noexcept
+        {
+            for (auto charP = string; *charP != 0; charP++)
+                printChar(*charP);
+        }
+        
+    private:
+        short _cursorColumn = 0;
+        short _cursorRow = 0;
+        short _cursorFirstColumn = 0;
+        short _cursorFirstRow = 0;
+        short _cursorLastColumn = this->columns - 1;
+        short _cursorLastRow = this->rows - 1;
     };
 }
 

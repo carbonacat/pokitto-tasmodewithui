@@ -83,30 +83,23 @@ int main()
                 }
             }
         }
-        ptui::tasUITileMap.set(1, 1, '0' + PC::fps_counter / 10);
-        ptui::tasUITileMap.set(2, 1, '0' + PC::fps_counter % 10);
+        ptui::tasUITileMap.setCursor(1, 1);
+        ptui::tasUITileMap.printChar('0' + PC::fps_counter / 10);
+        ptui::tasUITileMap.printChar('0' + PC::fps_counter % 10);
         
         
         if ((ticks >= 60) && (ticks <= 120))
         {
             ptui::tasUITileMap.drawBox(2, 20, 10, 28);
-            ptui::tasUITileMap.set(4, 21, 'A');
-            ptui::tasUITileMap.set(5, 21, 't');
-            ptui::tasUITileMap.set(6, 21, 't');
-            ptui::tasUITileMap.set(7, 21, 'a');
-            ptui::tasUITileMap.set(8, 21, 'c');
-            ptui::tasUITileMap.set(9, 21, 'k');
-            ptui::tasUITileMap.set(4, 22, 'M');
-            ptui::tasUITileMap.set(5, 22, 'a');
-            ptui::tasUITileMap.set(6, 22, 'g');
-            ptui::tasUITileMap.set(7, 22, 'i');
-            ptui::tasUITileMap.set(8, 22, 'c');
-            ptui::tasUITileMap.set(9, 22, 'k');
-            ptui::tasUITileMap.set(4, 23, 'I');
-            ptui::tasUITileMap.set(5, 23, 't');
-            ptui::tasUITileMap.set(6, 23, 'e');
-            ptui::tasUITileMap.set(7, 23, 'm');
-            ptui::tasUITileMap.set(8, 23, 's');
+            
+            ptui::tasUITileMap.setCursor(4, 21);
+            ptui::tasUITileMap.printString("Attack");
+            
+            ptui::tasUITileMap.setCursor(4, 22);
+            ptui::tasUITileMap.printString("Magick");
+            
+            ptui::tasUITileMap.setCursor(4, 23);
+            ptui::tasUITileMap.printString("Items");
             if (ticks < 70)
             {
                 ptui::tasUITileMap.set(3, 21, '>');
@@ -124,32 +117,26 @@ int main()
             else if (ticks > 90)
             {
                 ptui::tasUITileMap.drawBox(9, 20, 16, 23);
-                ptui::tasUITileMap.set(10, 21, '>');
-                ptui::tasUITileMap.set(11, 21, 'R');
-                ptui::tasUITileMap.set(12, 21, 'a');
-                ptui::tasUITileMap.set(13, 21, 't');
-                ptui::tasUITileMap.set(11, 22, 'S');
-                ptui::tasUITileMap.set(12, 22, 'l');
-                ptui::tasUITileMap.set(13, 22, 'i');
-                ptui::tasUITileMap.set(14, 22, 'm');
-                ptui::tasUITileMap.set(15, 22, 'e');
+                ptui::tasUITileMap.setCursor(11, 21);
+                ptui::tasUITileMap.printString("Rat");
+                ptui::tasUITileMap.setCursor(11, 22);
+                ptui::tasUITileMap.printString("Slime");
+                
                 if (ticks > 105)
                 {
                     ptui::tasUITileMap.set(10, 21, ' ');
                     ptui::tasUITileMap.set(10, 22, '>');
                 }
+                else
+                    ptui::tasUITileMap.set(10, 21, '>');
             }
         }
         else
         {
             ptui::tasUITileMap.drawBox(-1, 20, 37, 30);
             ptui::tasUITileMap.drawGauge(29, 35, 21, ticks, 59);
-            ptui::tasUITileMap.set(22, 21, 'M');
-            ptui::tasUITileMap.set(23, 21, 'a');
-            ptui::tasUITileMap.set(24, 21, 'r');
-            ptui::tasUITileMap.set(25, 21, 'e');
-            ptui::tasUITileMap.set(26, 21, 'v');
-            ptui::tasUITileMap.set(27, 21, 'e');
+            ptui::tasUITileMap.setCursor(22, 21);
+            ptui::tasUITileMap.printString("Mareve");
         }
         if (ticks > 120)
         {
@@ -162,18 +149,18 @@ int main()
         
         if (ticks > 120)
         {
-            ptui::tasUITileMap.drawBox(13, 2, 22, 4);
-            ptui::tasUITileMap.set(14, 3, 'C');
-            ptui::tasUITileMap.set(15, 3, 'r');
-            ptui::tasUITileMap.set(16, 3, 'i');
-            ptui::tasUITileMap.set(17, 3, 't');
-            ptui::tasUITileMap.set(18, 3, 'i');
-            ptui::tasUITileMap.set(19, 3, 'c');
-            ptui::tasUITileMap.set(20, 3, 'a');
-            ptui::tasUITileMap.set(21, 3, 'l');
+            ptui::tasUITileMap.drawBox(13, 2, 22, 6);
+            
+            ptui::tasUITileMap.setCursorBoundingBox(14, 3, 21, 5);
+            ptui::tasUITileMap.setCursor(14, 3);
+            
+            ptui::tasUITileMap.printString("Critical\n");
+            ptui::tasUITileMap.printString("Hello");
+            
+            ptui::tasUITileMap.resetCursorBoundingBox();
         }
         else
-            ptui::tasUITileMap.clear(13, 2, 22, 4);
+            ptui::tasUITileMap.clear(13, 2, 22, 6);
         
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
@@ -183,8 +170,6 @@ int main()
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
-            // ptui::tasUITileMap.shift(1, 1, ptui::TASUITileMap::columns - 2, ptui::TASUITileMap::rows - 2,
-            //                          -2 + rand() % 5, -2 + rand() % 5);
         }
     }
     
