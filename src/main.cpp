@@ -131,6 +131,17 @@ int main()
                                      ticks, 59);
         ptui::tasUITileMap.drawGauge(1, 35, 5,
                                      ticks, 59);
+    
+        ptui::tasUITileMap.drawCheckbox(1, 7, (ticks / 30 % 2) != 0);
+        ptui::tasUITileMap.set(2, 7, 'O');
+        ptui::tasUITileMap.set(3, 7, 'v');
+        ptui::tasUITileMap.set(4, 7, 'e');
+        ptui::tasUITileMap.set(5, 7, 'r');
+        ptui::tasUITileMap.set(6, 7, 'd');
+        ptui::tasUITileMap.set(7, 7, 'r');
+        ptui::tasUITileMap.set(8, 7, 'i');
+        ptui::tasUITileMap.set(9, 7, 'v');
+        ptui::tasUITileMap.set(10, 7, 'e');
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));

@@ -103,6 +103,12 @@ namespace ptui
                 this->set(lastColumn, row, TilesetDefinition::gaugeRightEmpty + std::max(0, std::min(filling, gaugeRightCapacity)));
             }
         }
+        
+        // Draws a checkbox at `column`, `row` with the given checked state.
+        void drawCheckbox(int column, int row, bool checked) noexcept
+        {
+            this->set(column, row, checked ? TilesetDefinition::checkboxChecked : TilesetDefinition::checkboxUnchecked);
+        }
     };
 }
 
