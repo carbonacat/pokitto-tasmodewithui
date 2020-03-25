@@ -51,6 +51,10 @@ namespace ptui
                            tileWidthP, tileHeightP,
                            lineWidthP>
     {
+    public: // Types.
+        TilesetDefinition definition;
+        
+        
     public: // Widgets.
         // Draws a gauge filled with the given amount, extending from `firstColumn` to `lastColumn` at the given row.
         // - If `current` is negative or 0, the gauge will be empty.
@@ -108,6 +112,38 @@ namespace ptui
         void drawCheckbox(int column, int row, bool checked) noexcept
         {
             this->set(column, row, checked ? TilesetDefinition::checkboxChecked : TilesetDefinition::checkboxUnchecked);
+        }
+        
+        // Draws a Box.
+        // - `firstColumn`, `firstRow`, `lastColumn` and `lastRow` will not be clamped, but clipped instead.
+        // - `lastColumn` and `lastRow` are included.
+        // - Empty or negative boxes won't be drawn.
+        // - Due to the limitation of tileset, 1-column and 1-row boxes will be rendered as Spaces.
+        void drawBox(int firstColumn, int firstRow, int lastColumn, int lastRow) noexcept
+        {
+            if ((firstColumn > lastColumn) || (firstRow > firstRow))
+                return ;
+            if ((firstColumn == lastColumn) || (firstRow == lastRow))
+            {
+                this->clear(firstColumn, firstRow, lastColumn, lastRow, TilesetDefinition::boxMiddle);
+                return ;
+            }
+            
+            // Corners.
+            this->set(firstColumn, firstRow, TilesetDefinition::boxTopLeft);
+            this->set(firstColumn, lastRow, TilesetDefinition::boxBottomLeft);
+            this->set(lastColumn, firstRow, TilesetDefinition::boxTopRight);
+            this->set(lastColumn, lastRow, TilesetDefinition::boxBottomRight);
+            
+            // Borders.
+            this->clear(firstColumn + 1, firstRow, lastColumn - 1, firstRow, TilesetDefinition::boxTop);
+            this->clear(firstColumn + 1, lastRow, lastColumn - 1, lastRow, TilesetDefinition::boxBottom);
+            
+            this->clear(firstColumn, firstRow + 1, firstColumn, lastRow - 1, TilesetDefinition::boxLeft);
+            this->clear(lastColumn, firstRow + 1, lastColumn, lastRow - 1, TilesetDefinition::boxRight);
+            
+            // Inside.
+            this->clear(firstColumn + 1, firstRow + 1, lastColumn - 1, lastRow - 1, TilesetDefinition::boxMiddle);
         }
     };
 }

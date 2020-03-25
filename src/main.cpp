@@ -34,43 +34,6 @@ int main()
     ptui::tasUITileMap.setTileset(TerminalTileSet);
     
     // Drawing the UI.
-    {
-        const auto tile = 24;
-    
-        const auto boxX = 0;
-        const auto boxY = 0;
-        const auto boxXLast = ptui::TASUITileMap::columns - 1;
-        const auto boxYLast = ptui::TASUITileMap::rows - 1;
-    
-        ptui::tasUITileMap.set(boxX, boxY, 24);
-        ptui::tasUITileMap.set(boxX, boxYLast, 30);
-        ptui::tasUITileMap.set(boxXLast, boxY, 26);
-        ptui::tasUITileMap.set(boxXLast, boxYLast, 28);
-        for (int i = boxX + 1; i <= boxXLast - 1; i++)
-        {
-            ptui::tasUITileMap.set(i, boxY, 25);
-            ptui::tasUITileMap.set(i, boxYLast, 29);
-        }
-        for (int j = boxY + 1; j <= boxYLast - 1; j++)
-        {
-            ptui::tasUITileMap.set(boxX, j, 31);
-            ptui::tasUITileMap.set(boxXLast, j, 27);
-        }
-        for (int i = boxX + 1; i <= boxXLast - 1; i++)
-            for (int j = boxY + 1; j <= boxYLast - 1; j++)
-            {
-                ptui::tasUITileMap.set(i, j, 32);
-            }
-        ptui::tasUITileMap.set(boxX + 1, boxY + 1, '1');
-        ptui::tasUITileMap.set(boxXLast - 1, boxY + 1, '1');
-        ptui::tasUITileMap.set(boxX + 1, boxYLast - 1, '1');
-        ptui::tasUITileMap.set(boxXLast - 1, boxYLast - 1, '1');
-        
-        
-        ptui::tasUITileMap.set((boxX + boxXLast)/2 - 1, (boxY + boxYLast)/2, 'O');
-        ptui::tasUITileMap.set((boxX + boxXLast)/2, (boxY + boxYLast)/2, 'N');
-        ptui::tasUITileMap.set((boxX + boxXLast)/2 + 1, (boxY + boxYLast)/2, 'E');
-    }
     while (PC::isRunning())
     {
         if (!PC::update()) 
@@ -121,32 +84,101 @@ int main()
         }
         ptui::tasUITileMap.set(1, 1, '0' + PC::fps_counter / 10);
         ptui::tasUITileMap.set(2, 1, '0' + PC::fps_counter % 10);
-        ptui::tasUITileMap.drawGauge(1, 1, 2,
-                                     ticks, 59);
-        ptui::tasUITileMap.drawGauge(1, 2, 3,
-                                     ticks, 59);
-        ptui::tasUITileMap.drawGauge(1, 3, 4,
-                                     ticks, 59);
-        ptui::tasUITileMap.drawGauge(1, 10, 5,
-                                     ticks, 59);
-        ptui::tasUITileMap.drawGauge(1, 35, 5,
-                                     ticks, 59);
-    
-        ptui::tasUITileMap.drawCheckbox(1, 7, (ticks / 30 % 2) != 0);
-        ptui::tasUITileMap.set(2, 7, 'O');
-        ptui::tasUITileMap.set(3, 7, 'v');
-        ptui::tasUITileMap.set(4, 7, 'e');
-        ptui::tasUITileMap.set(5, 7, 'r');
-        ptui::tasUITileMap.set(6, 7, 'd');
-        ptui::tasUITileMap.set(7, 7, 'r');
-        ptui::tasUITileMap.set(8, 7, 'i');
-        ptui::tasUITileMap.set(9, 7, 'v');
-        ptui::tasUITileMap.set(10, 7, 'e');
+        
+        
+        if ((ticks >= 60) && (ticks <= 120))
+        {
+            ptui::tasUITileMap.drawBox(2, 20, 10, 28);
+            ptui::tasUITileMap.set(4, 21, 'A');
+            ptui::tasUITileMap.set(5, 21, 't');
+            ptui::tasUITileMap.set(6, 21, 't');
+            ptui::tasUITileMap.set(7, 21, 'a');
+            ptui::tasUITileMap.set(8, 21, 'c');
+            ptui::tasUITileMap.set(9, 21, 'k');
+            ptui::tasUITileMap.set(4, 22, 'M');
+            ptui::tasUITileMap.set(5, 22, 'a');
+            ptui::tasUITileMap.set(6, 22, 'g');
+            ptui::tasUITileMap.set(7, 22, 'i');
+            ptui::tasUITileMap.set(8, 22, 'c');
+            ptui::tasUITileMap.set(9, 22, 'k');
+            ptui::tasUITileMap.set(4, 23, 'I');
+            ptui::tasUITileMap.set(5, 23, 't');
+            ptui::tasUITileMap.set(6, 23, 'e');
+            ptui::tasUITileMap.set(7, 23, 'm');
+            ptui::tasUITileMap.set(8, 23, 's');
+            if (ticks < 70)
+            {
+                ptui::tasUITileMap.set(3, 21, '>');
+            }
+            else if (ticks < 80)
+            {
+                ptui::tasUITileMap.set(3, 21, ' ');
+                ptui::tasUITileMap.set(3, 22, '>');
+            }
+            else if (ticks < 90)
+            {
+                ptui::tasUITileMap.set(3, 21, '>');
+                ptui::tasUITileMap.set(3, 22, ' ');
+            }
+            else if (ticks > 90)
+            {
+                ptui::tasUITileMap.drawBox(9, 20, 16, 23);
+                ptui::tasUITileMap.set(10, 21, '>');
+                ptui::tasUITileMap.set(11, 21, 'R');
+                ptui::tasUITileMap.set(12, 21, 'a');
+                ptui::tasUITileMap.set(13, 21, 't');
+                ptui::tasUITileMap.set(11, 22, 'S');
+                ptui::tasUITileMap.set(12, 22, 'l');
+                ptui::tasUITileMap.set(13, 22, 'i');
+                ptui::tasUITileMap.set(14, 22, 'm');
+                ptui::tasUITileMap.set(15, 22, 'e');
+                if (ticks > 105)
+                {
+                    ptui::tasUITileMap.set(10, 21, ' ');
+                    ptui::tasUITileMap.set(10, 22, '>');
+                }
+            }
+        }
+        else
+        {
+            ptui::tasUITileMap.drawBox(0, 20, 36, 29);
+            ptui::tasUITileMap.drawGauge(29, 35, 21, ticks, 59);
+            ptui::tasUITileMap.set(22, 21, 'M');
+            ptui::tasUITileMap.set(23, 21, 'a');
+            ptui::tasUITileMap.set(24, 21, 'r');
+            ptui::tasUITileMap.set(25, 21, 'e');
+            ptui::tasUITileMap.set(26, 21, 'v');
+            ptui::tasUITileMap.set(27, 21, 'e');
+        }
+        if (ticks > 120)
+        {
+            ptui::tasUITileMap.drawGauge(29, 35, 21, 0, 59);
+        }
+        bool ready = (ticks > 60) && (ticks < 120);
+        
+        ptui::tasUITileMap.drawCheckbox(21, 21, ready);
+        
+        
+        if (ticks > 120)
+        {
+            ptui::tasUITileMap.drawBox(13, 2, 22, 4);
+            ptui::tasUITileMap.set(14, 3, 'C');
+            ptui::tasUITileMap.set(15, 3, 'r');
+            ptui::tasUITileMap.set(16, 3, 'i');
+            ptui::tasUITileMap.set(17, 3, 't');
+            ptui::tasUITileMap.set(18, 3, 'i');
+            ptui::tasUITileMap.set(19, 3, 'c');
+            ptui::tasUITileMap.set(20, 3, 'a');
+            ptui::tasUITileMap.set(21, 3, 'l');
+        }
+        else
+            ptui::tasUITileMap.clear(13, 2, 22, 4);
+        
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
         ticks++;
-        if (ticks == 60)
+        if (ticks == 180)
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
