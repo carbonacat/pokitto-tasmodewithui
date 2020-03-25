@@ -207,7 +207,7 @@ namespace ptui
             {
                 int nextColumn = _cursorFirstColumn + ((_cursorColumn - _cursorFirstColumn) / TilesetDefinition::tabColumns + 1) * TilesetDefinition::tabColumns;
                 
-                if (nextColumn > _cursorLastRow)
+                if (nextColumn > _cursorLastColumn)
                     printChar('\n');
                 else while (_cursorColumn < nextColumn)
                     printChar(' ');

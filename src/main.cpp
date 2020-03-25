@@ -147,15 +147,14 @@ int main()
         ptui::tasUITileMap.drawCheckbox(21, 21, ready);
         
         
-        if (ticks > 120)
+        if (ticks > 16)
         {
             ptui::tasUITileMap.drawBox(13, 2, 22, 6);
             
-            ptui::tasUITileMap.setCursorBoundingBox(14, 3, 21, 5);
+            ptui::tasUITileMap.setCursorBoundingBox(14, 3, 21, 6);
             ptui::tasUITileMap.setCursor(14, 3);
             
-            ptui::tasUITileMap.printString("Critical\n");
-            ptui::tasUITileMap.printString("Hello");
+            ptui::tasUITileMap.printString("i\tii\tiii\tiiii\t\n----");
             
             ptui::tasUITileMap.resetCursorBoundingBox();
         }
