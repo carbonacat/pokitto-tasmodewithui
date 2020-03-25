@@ -32,6 +32,7 @@ int main()
     
     // Configuration.
     ptui::tasUITileMap.setTileset(TerminalTileSet);
+    ptui::tasUITileMap.setOffset(-1, -4);
     
     // Drawing the UI.
     while (PC::isRunning())
@@ -141,7 +142,7 @@ int main()
         }
         else
         {
-            ptui::tasUITileMap.drawBox(0, 20, 36, 29);
+            ptui::tasUITileMap.drawBox(-1, 20, 37, 30);
             ptui::tasUITileMap.drawGauge(29, 35, 21, ticks, 59);
             ptui::tasUITileMap.set(22, 21, 'M');
             ptui::tasUITileMap.set(23, 21, 'a');
