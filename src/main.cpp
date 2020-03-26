@@ -22,7 +22,7 @@ void GameFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
         std::fill(line, line + PROJ_LCDWIDTH, 0);
 }
 
-int main()
+int battleMockup()
 {
     using PC=Pokitto::Core;
     using PD=Pokitto::Display;
@@ -219,4 +219,58 @@ int main()
     }
     
     return 0;
+}
+
+int testPerfs()
+{
+    using PC=Pokitto::Core;
+    using PD=Pokitto::Display;
+    using PB=Pokitto::Buttons;
+    
+    PC::begin();
+    PD::loadRGBPalette(miloslav);
+    
+    auto mareveOriginX = Mareve[0] / 2;
+    auto mareveOriginY = Mareve[1] / 2;
+    Tilemap tilemap;
+    tilemap.set(gardenPath[0], gardenPath[1], gardenPath+2);
+    
+    for (int i = 0; i < sizeof(tiles)/(POK_TILE_W*POK_TILE_H); i++)
+        tilemap.setTile(i, POK_TILE_W, POK_TILE_H, tiles+i*POK_TILE_W*POK_TILE_H);
+
+    int characterX = 32;
+    int characterY = 32;
+    int speed=1;
+    int ticks = 0;
+    
+    // Configuration.
+    ptui::tasUITileMap.setTileset(TerminalTileSet);
+    ptui::tasUITileMap.setOffset(-1, -4);
+    ptui::tasUITileMap.clear(32);
+    PD::lineFillers[0] = TAS::NOPFiller;
+    PD::lineFillers[1] = TAS::NOPFiller;
+    
+    // Drawing the UI.
+    while (PC::isRunning())
+    {
+        if (!PC::update()) 
+            continue;
+        
+        //PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
+        tilemap.draw(-(characterX - 110), -(characterY - 88));
+        ticks++;
+        if (ticks == 120)
+        {
+            printf("fps=%d\n", PC::fps_counter);
+            ticks = 0;
+        }
+        transition++;
+    }
+    
+    return 0;
+}
+
+int main()
+{
+    return testPerfs();
 }
