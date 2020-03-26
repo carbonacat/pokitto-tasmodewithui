@@ -1,7 +1,7 @@
 #ifndef PTUI_UITILEMAP_HPP
 #   define PTUI_UITILEMAP_HPP
 
-#   include "ptui/BaseTileMap.hpp"
+#   include "ptui/PaletteTileMap.hpp"
 
 
 namespace ptui
@@ -49,7 +49,7 @@ namespace ptui
              unsigned lineWidthP,
              typename TilesetDefinition = UITilesetDefinition>
     class UITileMap:
-        public BaseTileMap<columnsP, rowsP,
+        public PaletteTileMap<columnsP, rowsP,
                            tileWidthP, tileHeightP,
                            lineWidthP>
     {
@@ -270,7 +270,7 @@ namespace ptui
         // Similar to printString, but it'll try to preserve "words" (a subchain of characters comprised of anything but whitespaces and control characters) together and generate newlines early before.
         void printText(const char* text) noexcept
         {
-            printText(text, std::numeric_limits<int>::max);
+            printText(text, std::numeric_limits<int>::max());
         }
         
         // Same than above, but only a limited number of characters are printed out of `text`.

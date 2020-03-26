@@ -1,5 +1,5 @@
-#ifndef PTUI_BASETILEMAP_HPP
-#   define PTUI_BASETILEMAP_HPP
+#ifndef PTUI_PALETTETILEMAP_HPP
+#   define PTUI_PALETTETILEMAP_HPP
 
 #   include <array>
 
@@ -21,7 +21,7 @@ namespace ptui
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
              unsigned lineWidthP>
-    class BaseTileMap
+    class PaletteTileMap
     {
     public: // Types & Constants.
         using Tile = std::uint8_t;
@@ -93,6 +93,25 @@ namespace ptui
             if (areCoordsValid(column, row))
                 _tiles[_tileIndex(column, row)] = tile;
         }
+        // Same than above, but allows changing the palette offset at the same time.
+        void set(int column, int row, Tile tile, std::uint8_t tilePaletteOffset) noexcept
+        {
+            if (areCoordsValid(column, row))
+            {
+                auto tileIndex = _tileIndex(column, row);
+                
+                _tiles[tileIndex] = tile;
+                _tiles[tileIndex + paletteIndexOffset] = tilePaletteOffset;
+            }
+        }
+        
+        // Only changes the palette offset of the target tile.
+        // - Safe - If column or row are outside the map, nothing will happen.
+        void setPaletteOffset(int column, int row, std::uint8_t tilePaletteOffset) noexcept
+        {
+            if (areCoordsValid(column, row))
+                _tiles[_tileIndex(column, row) + paletteIndexOffset] = tilePaletteOffset;
+        }
         
         // Returns a given tile in this map.
         // - Safe - If column or row are outside the map, `outsideTile` is returned.
@@ -106,9 +125,10 @@ namespace ptui
     
     public: // Mass Tiles Access.
         // Sets the whole map to the given Tile (Default Tile will make it blank).
-        void clear(Tile tile = 0) noexcept
+        void clear(Tile tile = 0, std::uint8_t paletteOffset = 0) noexcept
         {
-            std::fill(_tiles.begin(), _tiles.end(), tile);
+            std::fill(_tiles.begin(), _tiles.begin() + paletteIndexOffset, tile);
+            std::fill(_tiles.begin() + paletteIndexOffset, _tiles.end(), paletteOffset);
         }
         
         // Same than above, on a defined area.
@@ -218,13 +238,14 @@ namespace ptui
                 tileDataP = tileDataPStart + tileSubXStart;
                 tileDataPLast = tileDataPStart + tileWidth - 1;
             }
+            auto palette = _palette + tileP[paletteIndexOffset];
             
             // Iterates over all the concerned pixels.
             for (; pixelP < pixelPEnd; pixelP++)
             {
                 // TODO: Not need to check for both "pixelP < pixelPEnd" and "tileDataP == tileDataPLast" here. Could be done with a carefully crafted end.
                 {
-                    auto tilePixel = *tileDataP;
+                    auto tilePixel = palette[*tileDataP];
                     
                     if (tilePixel != 0)
                         *pixelP = tilePixel;
@@ -233,6 +254,7 @@ namespace ptui
                 {
                     // Onto the next tile in the row!
                     tileP++;
+                    palette = _palette + tileP[paletteIndexOffset];
                     
                     // Automatically skip any empty tiles.
                     while ((pixelP < pixelPEnd) && (*tileP == 0))
@@ -269,6 +291,16 @@ namespace ptui
         {
             return (column >= 0) && (column < columns) && (row >= 0) && (row < rows);
         }
+        
+        
+    public: // Palette manipulation.
+    
+        // Changes the palette offset for a given color.
+        void setPaletteOffset(std::uint8_t color, std::uint8_t offset) noexcept
+        {
+            _palette[color] = offset;
+        }
+        
         
     protected: // Unsafe implementations.
         // shift, but columns & rows are considered valid within the grid.
@@ -325,7 +357,9 @@ namespace ptui
         }
     
     private:
-        using Tiles = std::array<Tile, columns * rows>;
+        using Tiles = std::array<Tile, columns * rows * 2>; // Doubled as the second part holds the palette offsets.
+        
+        static constexpr auto paletteIndexOffset = columns * rows;
     
         static constexpr auto _tileIndex(short tileX, short tileY) noexcept
         {
@@ -352,9 +386,18 @@ namespace ptui
         const unsigned char* _tileDataRowBase = nullptr;
 
         const unsigned char* _tilesetData = nullptr;
-        Tiles _tiles;
+        Tiles _tiles = {};
+        
+        std::uint8_t _palette[256] =
+        {
+            0, 1, 2, 3, 4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5+88, 6+88, 7,
+            0, 1, 2, 3, 4, 5+136, 6+136, 7,
+            0, 1, 2, 3, 4, 5+112, 6+112, 7,
+            0, 1, 2, 3, 4, 5, 6, 7,
+        };
     };
 }
 
 
-#endif // PTUI_BASETILEMAP_HPP
+#endif // PTUI_PALETTETILEMAP_HPP

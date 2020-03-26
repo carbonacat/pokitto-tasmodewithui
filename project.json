@@ -389,6 +389,21 @@
 		},
 		"\\bin\\2020-03-25 - TASModeUI - Transitions.gif": {
 			"sdcard": false
+		},
+		"\\src\\ptui\\PaletteTileMap.hpp": {
+			"sdcard": false
+		},
+		"\\bin\\pokitto-tasmodewithui.bin.1.png": {
+			"sdcard": false
+		},
+		"\\bin\\pokitto-tasmodewithui.bin.1.h": {
+			"sdcard": false
+		},
+		"\\bin\\2020-03-26 - TASModeUI - Baguette.png": {
+			"sdcard": false
+		},
+		"\\bin\\2020-03-26 - TASModeUI - Rainbow.gif": {
+			"sdcard": false
 		}
 	},
 	"BUILDFlags": {

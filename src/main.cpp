@@ -247,8 +247,53 @@ int testPerfs()
     ptui::tasUITileMap.setTileset(TerminalTileSet);
     ptui::tasUITileMap.clear(32);
     ptui::tasUITileMap.drawBox(1, 1, 35, 28);
-    PD::lineFillers[0] = TAS::NOPFiller;
-    PD::lineFillers[1] = TAS::NOPFiller;
+    ptui::tasUITileMap.setCursor(2, 2);
+    ptui::tasUITileMap.setCursorBoundingBox(2, 2, 34, 27);
+    ptui::tasUITileMap.setPaletteOffset(2, 2, 8);
+    ptui::tasUITileMap.setPaletteOffset(3, 2, 8);
+    ptui::tasUITileMap.setPaletteOffset(4, 2, 8);
+    ptui::tasUITileMap.setPaletteOffset(5, 2, 8);
+    ptui::tasUITileMap.setPaletteOffset(6, 2, 8);
+    ptui::tasUITileMap.printText("Hello my good chap! Are we ready for the Punk Jam yet?!");
+    ptui::tasUITileMap.resetCursorBoundingBox();
+    
+    ptui::tasUITileMap.drawGauge(2, 6, 4, 3, 6);
+    ptui::tasUITileMap.setPaletteOffset(2, 4, 8);
+    ptui::tasUITileMap.setPaletteOffset(3, 4, 8);
+    ptui::tasUITileMap.setPaletteOffset(4, 4, 8);
+    ptui::tasUITileMap.setPaletteOffset(5, 4, 8);
+    ptui::tasUITileMap.setPaletteOffset(6, 4, 8);
+    
+    
+    ptui::tasUITileMap.drawGauge(12, 16, 4, 3, 6);
+    ptui::tasUITileMap.setPaletteOffset(12, 4, 16);
+    ptui::tasUITileMap.setPaletteOffset(13, 4, 16);
+    ptui::tasUITileMap.setPaletteOffset(14, 4, 16);
+    ptui::tasUITileMap.setPaletteOffset(15, 4, 16);
+    ptui::tasUITileMap.setPaletteOffset(16, 4, 16);
+    
+    
+    ptui::tasUITileMap.drawGauge(22, 26, 4, 3, 6);
+    ptui::tasUITileMap.setPaletteOffset(22, 4, 24);
+    ptui::tasUITileMap.setPaletteOffset(23, 4, 24);
+    ptui::tasUITileMap.setPaletteOffset(24, 4, 24);
+    ptui::tasUITileMap.setPaletteOffset(25, 4, 24);
+    ptui::tasUITileMap.setPaletteOffset(26, 4, 24);
+    
+    
+    
+    ptui::tasUITileMap.drawGauge(22, 29, 6, 6, 6);
+    ptui::tasUITileMap.setPaletteOffset(22, 6, 8);
+    ptui::tasUITileMap.setPaletteOffset(23, 6, 8);
+    ptui::tasUITileMap.setPaletteOffset(24, 6, 8);
+    ptui::tasUITileMap.setPaletteOffset(25, 6, 32);
+    ptui::tasUITileMap.setPaletteOffset(26, 6, 32);
+    ptui::tasUITileMap.setPaletteOffset(27, 6, 16);
+    ptui::tasUITileMap.setPaletteOffset(28, 6, 16);
+    ptui::tasUITileMap.setPaletteOffset(29, 6, 16);
+    
+    //PD::lineFillers[0] = TAS::NOPFiller;
+    //PD::lineFillers[1] = TAS::NOPFiller;
     
     // Drawing the UI.
     while (PC::isRunning())
@@ -263,7 +308,12 @@ int testPerfs()
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
+            ptui::tasUITileMap.setCursor(2, 27);
+            ptui::tasUITileMap.clear(2, 27, 3, 27);
+            ptui::tasUITileMap.printInteger(PC::fps_counter);
         }
+        ptui::tasUITileMap.setPaletteOffset(0+5, ticks);
+        ptui::tasUITileMap.setPaletteOffset(0+6, ticks + 1);
         transition++;
     }
     
@@ -272,5 +322,5 @@ int testPerfs()
 
 int main()
 {
-    return testPerfs();
+    return battleMockup();
 }
