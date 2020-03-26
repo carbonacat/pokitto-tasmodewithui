@@ -183,7 +183,8 @@ namespace ptui
             std::uint8_t* pixelP = lineBuffer + _indexStart;
             std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
             auto tileSubXStart = _tileSubXStart;
-            
+            auto palette = _palette;
+
             if (*tileP == 0)
             {
                 // Empty first tile. Gonna skip it!
@@ -223,7 +224,7 @@ namespace ptui
             for (; pixelP < pixelPEnd; pixelP++)
             {
                 {
-                    auto tilePixel = *tileDataP;
+                    auto tilePixel = palette[*tileDataP];
                     
                     if (tilePixel != 0)
                         *pixelP = tilePixel;
@@ -352,6 +353,8 @@ namespace ptui
 
         const unsigned char* _tilesetData = nullptr;
         Tiles _tiles;
+        
+        std::uint8_t _palette[256] = {1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     };
 }
 

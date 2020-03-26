@@ -245,8 +245,8 @@ int testPerfs()
     
     // Configuration.
     ptui::tasUITileMap.setTileset(TerminalTileSet);
-    ptui::tasUITileMap.setOffset(-1, -4);
     ptui::tasUITileMap.clear(32);
+    ptui::tasUITileMap.drawBox(1, 1, 35, 28);
     PD::lineFillers[0] = TAS::NOPFiller;
     PD::lineFillers[1] = TAS::NOPFiller;
     
