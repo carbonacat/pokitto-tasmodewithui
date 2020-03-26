@@ -267,6 +267,37 @@ namespace ptui
                 printChar('a' + number - 10);
         }
         
+        // Similar to printString, but it'll try to preserve "words" (a subchain of characters comprised of anything but whitespaces and control characters) together and generate newlines early before.
+        void printText(const char* text) noexcept
+        {
+            printText(text, std::numeric_limits<int>::max);
+        }
+        
+        // Same than above, but only a limited number of characters are printed out of `text`.
+        void printText(const char* text, int limit) noexcept
+        {
+            while ((*text != 0) && (limit > 0))
+            {
+                // Prints all the special characters before.
+                for (; (*text != 0) && (limit > 0) && (*text <= 32); text++, limit--)
+                    printChar(*text);
+                
+                if (limit > 0)
+                {
+                    auto wordLength = 0;
+                    auto wordEnd = text;
+                    
+                    // Gets the length of the next wordGets all the visible characters.
+                    for (; (*wordEnd != 0) && (*wordEnd > 32); wordEnd++)
+                        wordLength++;
+                    if (_cursorColumn + wordLength > _cursorLastColumn)
+                        printChar('\n');
+                    for (; (text != wordEnd) && (limit > 0); text++, limit--)
+                        printChar(*text);
+                }
+            }
+        }
+        
         
     private:
         short _cursorColumn = 0;

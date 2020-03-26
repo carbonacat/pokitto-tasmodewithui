@@ -198,7 +198,8 @@ int main()
             ptui::tasUITileMap.setCursorBoundingBox(3, 3, 34, 5);
             ptui::tasUITileMap.setCursor(3, 3);
             
-            ptui::tasUITileMap.printString("Life... dreams... hope...\n    \n\nWhere do they come from?\nAnd where do they go?\n     \n\nSuch meaningless things...\nI'll destroy them all!    ", (ticks - 16) / 2);
+            //ptui::tasUITileMap.printString("Life... dreams... hope...\n    \n\nWhere do they come from?\nAnd where do they go?\n     \n\nSuch meaningless things...\nI'll destroy them all!    ", (ticks - 16) / 2);
+            ptui::tasUITileMap.printText("Interesting,Interesting Interesting\tInteresting, Interesting-Interesting, Interesting InterestingInteresting, Interesting, InterestingInterestingInteresting", (ticks - 16) / 2);
             
             ptui::tasUITileMap.resetCursorBoundingBox();
         }
