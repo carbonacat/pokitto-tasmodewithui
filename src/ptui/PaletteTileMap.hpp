@@ -23,6 +23,8 @@ namespace ptui
              unsigned lineWidthP>
     class PaletteTileMap
     {
+        static_assert(lineWidthP > tileWidthP);
+        
     public: // Types & Constants.
         using Tile = std::uint8_t;
         
@@ -78,10 +80,10 @@ namespace ptui
         }
         
         // Must be called before use!
-        // Is a 8BPP tileset where each tile is 6x6 pixels.
-        void setTileset(const unsigned char* tilesetData) noexcept
+        // - `tilesetImage` is a 8BPP tileset where each tile is 6x6 pixels.
+        void setTilesetImage(const unsigned char* tilesetImage) noexcept
         {
-            _tilesetData = tilesetData;
+            _tilesetImage = tilesetImage;
         }
         
         
@@ -141,6 +143,13 @@ namespace ptui
                         tile);
         }
         
+        // Same than above, but for the palette offset.
+        void clearPaletteOffset(int firstColumn, int firstRow, int lastColumn, int lastRow, std::uint8_t tilePaletteOffset = 0) noexcept
+        {
+            clearPaletteOffsetUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                                     tilePaletteOffset);
+        }
+        
         // Shift the whole map by `shiftedColumns` columns and `shiftedRows` rows.
         // - "Introduced" Tiles will be *left as is*.
         void shift(int shiftedColumns, int shiftedRows) noexcept
@@ -163,7 +172,13 @@ namespace ptui
         
     public: // Rendering.
         // Renders a single line.
+        
         void fillLine(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        {
+            fillLineBaseNew(lineBuffer, y, skip);
+        }
+        
+        void fillLinePaletteNew(std::uint8_t* lineBuffer, int y, bool skip) noexcept
         {
             // Row initialization / change.
             
@@ -171,7 +186,7 @@ namespace ptui
             {
                 _tileY = _tileYStart;
                 _tileSubY = _tileSubYStart;
-                _tileDataRowBase = _tilesetData + _tileSubY * tileWidth;
+                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
             }
             else
             {
@@ -180,13 +195,139 @@ namespace ptui
                     // Onto the next row!
                     _tileSubY = 0;
                     _tileY++;
-                    _tileDataRowBase = _tilesetData;
+                    _tileImageRowBase = _tilesetImage;
                 }
                 else
                 {
                     // Onto the next pixel line of the same tile row!
                     _tileSubY++;
-                    _tileDataRowBase += tileWidth;
+                    _tileImageRowBase += tileWidth;
+                }
+            }
+            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)) || (_indexStart >= _indexEnd))
+                return ;
+            
+            // Scanline rendition.
+            
+            // Local access is faster than field access.
+            auto tileImageRowBase = _tileImageRowBase;
+            // Current pixel pointer.
+            std::uint8_t* pixelP = lineBuffer + _indexStart;
+            // Last pixel pointer.
+            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+            // Current tile pointer.
+            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
+            
+            // Is the first tile cut in half?
+            if (_tileSubXStart != 0)
+            {
+                // Is the tile empty?
+                if (*tileP == 0)
+                    pixelP += tileWidth - _tileSubXStart;
+                else
+                {
+                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
+                    // Let's render it.
+                    // Points to the current pixel in the tile.
+                    const unsigned char* tileImageP = tileImagePStart + _tileSubXStart;
+                    // Points right after the last pixel in the tile's row.
+                    // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
+                    const unsigned char* tileImagePEnd = tileImagePStart + tileWidth;
+                    // Which palette to use.
+                    auto palette = _palette + tileP[paletteIndexOffset];
+                    
+                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+                    {
+                        auto tilePixel = palette[*tileImageP];
+                        
+                        if (tilePixel != 0)
+                            *pixelP = tilePixel;
+                    }
+                }
+                tileP++;
+            }
+            
+            // Let's render the middle tiles.
+            while (pixelP + tileWidth <= pixelPEnd)
+            {
+                // Let's skip any empty middle tiles.
+                while ((*tileP == 0) && (pixelP + tileWidth < pixelPEnd))
+                {
+                    tileP++;
+                    pixelP += tileWidth;
+                }
+                
+                // Middle tile!
+                // Let's render it.
+                // Points to the current pixel in the tile.
+                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                // Points right after the last pixel in the tile's row.
+                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
+                const unsigned char* tileImagePEnd = tileImageP + tileWidth;
+                // Which palette to use.
+                auto palette = _palette + tileP[paletteIndexOffset];
+                
+                // I hope this is unrolled properly.
+                for (int i = 0; i < tileWidth; i++)
+                {
+                    auto tilePixel = palette[*tileImageP];
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
+                    pixelP++;
+                    tileImageP++;
+                }
+                tileP++;
+            }
+            
+            // Let's render the last tile, if there is one.
+            if ((pixelP < pixelPEnd) && (*tileP != 0))
+            {
+                // Last tile!
+                // Let's render it.
+                // Points to the current pixel in the tile.
+                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                // Points right after the last pixel in the tile's row.
+                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
+                const unsigned char* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
+                // Which palette to use.
+                auto palette = _palette + tileP[paletteIndexOffset];
+                
+                for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+                {
+                    auto tilePixel = palette[*tileImageP];
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
+                }
+                tileP++;
+            }
+        }
+        
+        void fillLinePaletteOld(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        {
+            // Row initialization / change.
+            
+            if (y == 0)
+            {
+                _tileY = _tileYStart;
+                _tileSubY = _tileSubYStart;
+                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
+            }
+            else
+            {
+                if (_tileSubY == tileHeight - 1)
+                {
+                    // Onto the next row!
+                    _tileSubY = 0;
+                    _tileY++;
+                    _tileImageRowBase = _tilesetImage;
+                }
+                else
+                {
+                    // Onto the next pixel line of the same tile row!
+                    _tileSubY++;
+                    _tileImageRowBase += tileWidth;
                 }
             }
             if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)))
@@ -194,7 +335,7 @@ namespace ptui
             
             // Scanline rendition.
             
-            auto tileDataRowBase = _tileDataRowBase; // Won't mutate, will be read in a loop -> stored locally.
+            auto tileImageRowBase = _tileImageRowBase; // Won't mutate, will be read in a loop -> stored locally.
             
             // TODO: For a given row, this code's execution is the same, except for the tileDataP and tileDataPLast which are offset by one tile's line each time.
             // TODO: Could be moved into the row change section above, at the cost of RAM.
@@ -221,8 +362,8 @@ namespace ptui
                 }
                 tileSubXStart = 0;
             }
-            const unsigned char* tileDataPLast;
-            const unsigned char* tileDataP;
+            const unsigned char* tileImagePLast;
+            const unsigned char* tileImageP;
             
             // Automatically skip any empty tiles.
             while ((pixelP < pixelPEnd) && (*tileP == 0))
@@ -233,10 +374,10 @@ namespace ptui
             
             // Configures the initial tile.
             {
-                auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
+                auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
                 
-                tileDataP = tileDataPStart + tileSubXStart;
-                tileDataPLast = tileDataPStart + tileWidth - 1;
+                tileImageP = tileImagePStart + tileSubXStart;
+                tileImagePLast = tileImagePStart + tileWidth - 1;
             }
             auto palette = _palette + tileP[paletteIndexOffset];
             
@@ -245,12 +386,12 @@ namespace ptui
             {
                 // TODO: Not need to check for both "pixelP < pixelPEnd" and "tileDataP == tileDataPLast" here. Could be done with a carefully crafted end.
                 {
-                    auto tilePixel = palette[*tileDataP];
+                    auto tilePixel = palette[*tileImageP];
                     
                     if (tilePixel != 0)
                         *pixelP = tilePixel;
                 }
-                if (tileDataP == tileDataPLast)
+                if (tileImageP == tileImagePLast)
                 {
                     // Onto the next tile in the row!
                     tileP++;
@@ -263,16 +404,243 @@ namespace ptui
                         pixelP += tileWidth;
                     }
                     
-                    auto tileDataPStart = tileDataRowBase + *tileP * tileSize;
+                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
                     
-                    tileDataP = tileDataPStart;
-                    tileDataPLast = tileDataPStart + tileWidth - 1;
+                    tileImageP = tileImagePStart;
+                    tileImagePLast = tileImagePStart + tileWidth - 1;
                 }
                 else
-                    tileDataP++;
+                    tileImageP++;
             }
         }
         
+        void fillLineBaseNew(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        {
+            // Row initialization / change.
+            
+            if (y == 0)
+            {
+                _tileY = _tileYStart;
+                _tileSubY = _tileSubYStart;
+                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
+            }
+            else
+            {
+                if (_tileSubY == tileHeight - 1)
+                {
+                    // Onto the next row!
+                    _tileSubY = 0;
+                    _tileY++;
+                    _tileImageRowBase = _tilesetImage;
+                }
+                else
+                {
+                    // Onto the next pixel line of the same tile row!
+                    _tileSubY++;
+                    _tileImageRowBase += tileWidth;
+                }
+            }
+            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)) || (_indexStart >= _indexEnd))
+                return ;
+            
+            // Scanline rendition.
+            
+            // Local access is faster than field access.
+            auto tileImageRowBase = _tileImageRowBase;
+            // Current pixel pointer.
+            std::uint8_t* pixelP = lineBuffer + _indexStart;
+            // Last pixel pointer.
+            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+            // Current tile pointer.
+            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
+            
+            // Is the first tile cut in half?
+            if (_tileSubXStart != 0)
+            {
+                // Is the tile empty?
+                if (*tileP == 0)
+                    pixelP += tileWidth - _tileSubXStart;
+                else
+                {
+                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
+                    // Let's render it.
+                    // Points to the current pixel in the tile.
+                    const unsigned char* tileImageP = tileImagePStart + _tileSubXStart;
+                    // Points right after the last pixel in the tile's row.
+                    // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
+                    const unsigned char* tileImagePEnd = tileImagePStart + tileWidth;
+                    
+                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+                    {
+                        auto tilePixel = *tileImageP;
+                        
+                        if (tilePixel != 0)
+                            *pixelP = tilePixel;
+                    }
+                }
+                tileP++;
+            }
+            
+            // Let's render the middle tiles.
+            while (pixelP + tileWidth <= pixelPEnd)
+            {
+                // Let's skip any empty middle tiles.
+                while ((*tileP == 0) && (pixelP + tileWidth < pixelPEnd))
+                {
+                    tileP++;
+                    pixelP += tileWidth;
+                }
+                
+                // Middle tile!
+                // Let's render it.
+                // Points to the current pixel in the tile.
+                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                // Points right after the last pixel in the tile's row.
+                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
+                const unsigned char* tileImagePEnd = tileImageP + tileWidth;
+                
+                // I hope this is unrolled properly.
+                for (int i = 0; i < tileWidth; i++)
+                {
+                    auto tilePixel = *tileImageP;
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
+                    pixelP++;
+                    tileImageP++;
+                }
+                tileP++;
+            }
+            
+            // Let's render the last tile, if there is one.
+            if ((pixelP < pixelPEnd) && (*tileP != 0))
+            {
+                // Last tile!
+                // Let's render it.
+                // Points to the current pixel in the tile.
+                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                // Points right after the last pixel in the tile's row.
+                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
+                const unsigned char* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
+                
+                for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+                {
+                    auto tilePixel = *tileImageP;
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
+                }
+                tileP++;
+            }
+        }
+        
+        void fillLineBaseOld(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        {
+            // Row initialization / change.
+            
+            if (y == 0)
+            {
+                _tileY = _tileYStart;
+                _tileSubY = _tileSubYStart;
+                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
+            }
+            else
+            {
+                if (_tileSubY == tileHeight - 1)
+                {
+                    // Onto the next row!
+                    _tileSubY = 0;
+                    _tileY++;
+                    _tileImageRowBase = _tilesetImage;
+                }
+                else
+                {
+                    // Onto the next pixel line of the same tile row!
+                    _tileSubY++;
+                    _tileImageRowBase += tileWidth;
+                }
+            }
+            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)))
+                return ;
+            
+            // Scanline rendition.
+            
+            auto tileImageRowBase = _tileImageRowBase; // Won't mutate, will be read in a loop -> stored locally.
+            
+            // TODO: For a given row, this code's execution is the same, except for the tileDataP and tileDataPLast which are offset by one tile's line each time.
+            // TODO: Could be moved into the row change section above, at the cost of RAM.
+            // Points to the first tile of the row.
+            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
+            std::uint8_t* pixelP = lineBuffer + _indexStart;
+            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+            auto tileSubXStart = _tileSubXStart;
+
+            if (*tileP == 0)
+            {
+                // Empty first tile. Gonna skip it!
+                // We might have an offset, so we must take account of it (_tileSubXStart).
+                auto initialSkip = tileWidth - tileSubXStart;
+                
+                tileP++;
+                pixelP += initialSkip;
+                
+                // Automatically skip any other empty tiles.
+                while ((pixelP < pixelPEnd) && (*tileP == 0))
+                {
+                    tileP++;
+                    pixelP += tileWidth;
+                }
+                tileSubXStart = 0;
+            }
+            const unsigned char* tileImagePLast;
+            const unsigned char* tileImageP;
+            
+            // Automatically skip any empty tiles.
+            while ((pixelP < pixelPEnd) && (*tileP == 0))
+            {
+                tileP++;
+                pixelP += tileWidth;
+            }
+            
+            // Configures the initial tile.
+            {
+                auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
+                
+                tileImageP = tileImagePStart + tileSubXStart;
+                tileImagePLast = tileImagePStart + tileWidth - 1;
+            }
+            
+            // Iterates over all the concerned pixels.
+            for (; pixelP < pixelPEnd; pixelP++)
+            {
+                // TODO: Not need to check for both "pixelP < pixelPEnd" and "tileDataP == tileDataPLast" here. Could be done with a carefully crafted end.
+                {
+                    auto tilePixel = *tileImageP;
+                    
+                    if (tilePixel != 0)
+                        *pixelP = tilePixel;
+                }
+                if (tileImageP == tileImagePLast)
+                {
+                    // Onto the next tile in the row!
+                    tileP++;
+                    
+                    // Automatically skip any empty tiles.
+                    while ((pixelP < pixelPEnd) && (*tileP == 0))
+                    {
+                        tileP++;
+                        pixelP += tileWidth;
+                    }
+                    
+                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
+                    
+                    tileImageP = tileImagePStart;
+                    tileImagePLast = tileImagePStart + tileWidth - 1;
+                }
+                else
+                    tileImageP++;
+            }
+        }
         
     public: // Coords manipulation.
         // Updates the given grid coordinates so they're clamped inside the box (e.g. negative will be zero'd).
@@ -303,13 +671,22 @@ namespace ptui
         
         
     protected: // Unsafe implementations.
-        // shift, but columns & rows are considered valid within the grid.
+        // clear, but columns & rows are considered valid within the grid.
         void clearUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
         {
             // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
             for (int row = firstRow; row <= lastRow; row++)
                 for (int column = firstColumn; column <= lastColumn; column++)
                     set(column, row, tile);
+        }
+        
+        // clearPaletteOffset, but columns & rows are considered valid within the grid.
+        void clearPaletteOffsetUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, std::uint8_t paletteOffset = 0) noexcept
+        {
+            // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
+            for (int row = firstRow; row <= lastRow; row++)
+                for (int column = firstColumn; column <= lastColumn; column++)
+                    setPaletteOffset(column, row, paletteOffset);
         }
         
         // shift, but columns & rows are considered valid within the grid.
@@ -382,10 +759,10 @@ namespace ptui
         short _tileYStart = 0;
         short _tileSubYStart = 0;
         
-        // Derived from _tilesetData
-        const unsigned char* _tileDataRowBase = nullptr;
+        // Derived from _tilesetImage
+        const unsigned char* _tileImageRowBase = nullptr;
 
-        const unsigned char* _tilesetData = nullptr;
+        const unsigned char* _tilesetImage = nullptr;
         Tiles _tiles = {};
         
         std::uint8_t _palette[256] =
@@ -395,6 +772,7 @@ namespace ptui
             0, 1, 2, 3, 4, 5+136, 6+136, 7,
             0, 1, 2, 3, 4, 5+112, 6+112, 7,
             0, 1, 2, 3, 4, 5, 6, 7,
+            0, 0, 2, 3, 4, 5, 6, 7,
         };
     };
 }

@@ -22,14 +22,28 @@ void GameFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
         std::fill(line, line + PROJ_LCDWIDTH, 0);
 }
 
+void TerminalTMFillerPaletteOld(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.fillLinePaletteOld(line, y, skip);
+}
+void TerminalTMFillerPaletteNew(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.fillLinePaletteNew(line, y, skip);
+}
+void TerminalTMFillerBaseOld(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.fillLineBaseOld(line, y, skip);
+}
+void TerminalTMFillerBaseNew(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.fillLineBaseNew(line, y, skip);
+}
+
 int battleMockup()
 {
     using PC=Pokitto::Core;
     using PD=Pokitto::Display;
     using PB=Pokitto::Buttons;
-    
-    PC::begin();
-    PD::loadRGBPalette(miloslav);
     
     auto mareveOriginX = Mareve[0] / 2;
     auto mareveOriginY = Mareve[1] / 2;
@@ -45,11 +59,17 @@ int battleMockup()
     int ticks = 0;
     
     // Configuration.
-    ptui::tasUITileMap.setTileset(TerminalTileSet);
+    ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
     ptui::tasUITileMap.setOffset(-1, -4);
+    ptui::tasUITileMap.clear();
+    ptui::tasUITileMap.setPaletteOffset(0+5, 5);
+    ptui::tasUITileMap.setPaletteOffset(0+6, 6);
+    
+    PD::lineFillers[0] = TAS::BGTileFiller;
+    PD::lineFillers[1] = TAS::SpriteFiller;
     
     // Drawing the UI.
-    while (PC::isRunning())
+    while (PC::isRunning() && !PB::cBtn())
     {
         if (!PC::update()) 
             continue;
@@ -98,7 +118,7 @@ int battleMockup()
             }
         }
         ptui::tasUITileMap.setCursor(1, 1);
-        ptui::tasUITileMap.clear(1, 1, 1, 3);
+        ptui::tasUITileMap.clear(1, 1, 3, 1);
         ptui::tasUITileMap.printInteger(PC::fps_counter);
         
         
@@ -182,6 +202,8 @@ int battleMockup()
             ptui::tasUITileMap.printInteger(543, 4);
             
             ptui::tasUITileMap.drawGauge(31, 35, 28, ticks, 59);
+            
+            ptui::tasUITileMap.clearPaletteOffset(31, 22, 35, 28, ticks >= 59 ? 8 : 0);
         }
         if (ticks > 120)
         {
@@ -205,7 +227,15 @@ int battleMockup()
         }
         else
             ptui::tasUITileMap.clear(2, 2, 35, 6);
-        
+    
+        {
+            ptui::tasUITileMap.drawGauge(1, 35, 8, ticks, 350);
+            ptui::tasUITileMap.clearPaletteOffset(1, 8, 35, 9, (ticks / 16 % 2) ? 40 : 0);
+            ptui::tasUITileMap.setCursorBoundingBox(1, 9, 35, 9);
+            ptui::tasUITileMap.setCursor(1, 9);
+            ptui::tasUITileMap.printText("This is an interesting text!");
+            ptui::tasUITileMap.resetCursorBoundingBox();
+        }
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
         tilemap.draw(-(characterX - 110), -(characterY - 88));
@@ -221,31 +251,18 @@ int battleMockup()
     return 0;
 }
 
-int testPerfs()
+int testPerfsFull(bool cropped)
 {
     using PC=Pokitto::Core;
     using PD=Pokitto::Display;
     using PB=Pokitto::Buttons;
     
-    PC::begin();
-    PD::loadRGBPalette(miloslav);
-    
-    auto mareveOriginX = Mareve[0] / 2;
-    auto mareveOriginY = Mareve[1] / 2;
-    Tilemap tilemap;
-    tilemap.set(gardenPath[0], gardenPath[1], gardenPath+2);
-    
-    for (int i = 0; i < sizeof(tiles)/(POK_TILE_W*POK_TILE_H); i++)
-        tilemap.setTile(i, POK_TILE_W, POK_TILE_H, tiles+i*POK_TILE_W*POK_TILE_H);
-
-    int characterX = 32;
-    int characterY = 32;
-    int speed=1;
     int ticks = 0;
     
     // Configuration.
-    ptui::tasUITileMap.setTileset(TerminalTileSet);
+    ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
     ptui::tasUITileMap.clear(32);
+    ptui::tasUITileMap.setOffset(-1, cropped ? 135: 0);
     ptui::tasUITileMap.drawBox(1, 1, 35, 28);
     ptui::tasUITileMap.setCursor(2, 2);
     ptui::tasUITileMap.setCursorBoundingBox(2, 2, 34, 27);
@@ -292,29 +309,153 @@ int testPerfs()
     ptui::tasUITileMap.setPaletteOffset(28, 6, 16);
     ptui::tasUITileMap.setPaletteOffset(29, 6, 16);
     
-    //PD::lineFillers[0] = TAS::NOPFiller;
-    //PD::lineFillers[1] = TAS::NOPFiller;
+    PD::lineFillers[0] = TAS::NOPFiller;
+    PD::lineFillers[1] = TAS::NOPFiller;
     
     // Drawing the UI.
-    while (PC::isRunning())
+    while (PC::isRunning() && !PB::cBtn())
     {
         if (!PC::update()) 
             continue;
         
-        //PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
-        tilemap.draw(-(characterX - 110), -(characterY - 88));
+        if (PB::aBtn())
+        {
+            auto offsetX = ptui::tasUITileMap.offsetX();
+            auto offsetY = ptui::tasUITileMap.offsetY();
+    
+            if (PB::leftBtn()) offsetX--;
+            if (PB::rightBtn()) offsetX++;
+            if (PB::downBtn()) offsetY++;
+            if (PB::upBtn()) offsetY--;
+            ptui::tasUITileMap.setOffset(offsetX, offsetY);
+        }
+        
         ticks++;
-        if (ticks == 120)
+        if (ticks == 60)
         {
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
-            ptui::tasUITileMap.setCursor(2, 27);
-            ptui::tasUITileMap.clear(2, 27, 3, 27);
+            ptui::tasUITileMap.setCursor(2, 5);
+            ptui::tasUITileMap.clear(2, 5, 3, 5);
             ptui::tasUITileMap.printInteger(PC::fps_counter);
         }
         ptui::tasUITileMap.setPaletteOffset(0+5, ticks);
         ptui::tasUITileMap.setPaletteOffset(0+6, ticks + 1);
-        transition++;
+    }
+    
+    return 0;
+}
+
+int testPerfsStairs()
+{
+    using PC=Pokitto::Core;
+    using PD=Pokitto::Display;
+    using PB=Pokitto::Buttons;
+    
+    int ticks = 0;
+    
+    // Configuration.
+    ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
+    ptui::tasUITileMap.clear(0);
+    ptui::tasUITileMap.setOffset(0, 0);
+    
+    PD::lineFillers[0] = TAS::NOPFiller;
+    PD::lineFillers[1] = TAS::NOPFiller;
+    
+    // Drawing the UI.
+    while (PC::isRunning() && !PB::cBtn())
+    {
+        if (!PC::update()) 
+            continue;
+        
+        if (PB::aBtn())
+        {
+            auto offsetX = ptui::tasUITileMap.offsetX();
+            auto offsetY = ptui::tasUITileMap.offsetY();
+    
+            if (PB::leftBtn()) offsetX--;
+            if (PB::rightBtn()) offsetX++;
+            if (PB::downBtn()) offsetY++;
+            if (PB::upBtn()) offsetY--;
+            ptui::tasUITileMap.setOffset(offsetX, offsetY);
+        }
+        
+        ticks++;
+        if (ticks == 60)
+        {
+            printf("fps=%d\n", PC::fps_counter);
+            ticks = 0;
+            ptui::tasUITileMap.clear(0);
+            for (int i = 0; i < 30; i++)
+            {
+                ptui::tasUITileMap.setCursor(i, i);
+                ptui::tasUITileMap.clear(i, i, i+2, i, 32);
+                ptui::tasUITileMap.printInteger(PC::fps_counter);
+            }
+        }
+        ptui::tasUITileMap.setPaletteOffset(0+5, ticks);
+        ptui::tasUITileMap.setPaletteOffset(0+6, ticks + 1);
+    }
+    
+    return 0;
+}
+
+int intermission(const char* nextScene)
+{
+    using PC=Pokitto::Core;
+    using PD=Pokitto::Display;
+    using PB=Pokitto::Buttons;
+    
+    int ticks = 0;
+    
+    // Configuration.
+    ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
+    ptui::tasUITileMap.clear(32);
+    ptui::tasUITileMap.setOffset(0, 0);
+    
+    PD::lineFillers[0] = TAS::NOPFiller;
+    PD::lineFillers[1] = TAS::NOPFiller;
+    
+    // Drawing the UI.
+    while (PC::isRunning() && PB::cBtn())
+    {
+        if (!PC::update()) 
+            continue;
+        
+        if (PB::leftBtn()) PD::lineFillers[2] = TerminalTMFillerBaseOld;
+        if (PB::rightBtn()) PD::lineFillers[2] = TerminalTMFillerBaseNew;
+        if (PB::downBtn()) PD::lineFillers[2] = TerminalTMFillerPaletteOld;
+        if (PB::upBtn()) PD::lineFillers[2] = TerminalTMFillerPaletteNew;
+        
+        ptui::tasUITileMap.drawBox(1, 1, 30, 3);
+        ptui::tasUITileMap.setCursor(2, 2);
+        ptui::tasUITileMap.printString("Next:");
+        ptui::tasUITileMap.printString(nextScene);
+        
+        
+        ptui::tasUITileMap.drawBox(1, 5, 36, 7);
+        ptui::tasUITileMap.setCursor(2, 6);
+        ptui::tasUITileMap.printString("UI rend:");
+        if (PD::lineFillers[2] == TerminalTMFillerBaseOld)
+            ptui::tasUITileMap.printString("TerminalTMFillerBaseOld");
+        if (PD::lineFillers[2] == TerminalTMFillerBaseNew)
+            ptui::tasUITileMap.printString("TerminalTMFillerBaseNew");
+        if (PD::lineFillers[2] == TerminalTMFillerPaletteOld)
+            ptui::tasUITileMap.printString("TerminalTMFillerPaletteOld");
+        if (PD::lineFillers[2] == TerminalTMFillerPaletteNew)
+            ptui::tasUITileMap.printString("TerminalTMFillerPaletteNew");
+
+        ticks++;
+        if (ticks == 60)
+        {
+            printf("fps=%d\n", PC::fps_counter);
+            ticks = 0;
+            ptui::tasUITileMap.drawBox(30, 1, 35, 3);
+            ptui::tasUITileMap.setCursor(32, 2);
+            ptui::tasUITileMap.printInteger(PC::fps_counter);
+        }
+        ptui::tasUITileMap.setPaletteOffset(0+5, 8+5);
+        ptui::tasUITileMap.setPaletteOffset(0+6, 8+6);
     }
     
     return 0;
@@ -322,5 +463,27 @@ int testPerfs()
 
 int main()
 {
-    return battleMockup();
+    using PC=Pokitto::Core;
+    using PD=Pokitto::Display;
+    using PB=Pokitto::Buttons;
+    
+    PC::begin();
+    PD::loadRGBPalette(miloslav);
+    PD::lineFillers[2] = TerminalTMFillerBaseOld;
+    
+    while (PC::isRunning())
+    {
+        intermission("Test - Perfs Full");
+        testPerfsFull(false);
+        
+        intermission("Test - Perfs Cropped");
+        testPerfsFull(true);
+        
+        intermission("Test - Perfs Stairs");
+        testPerfsStairs();
+        
+        intermission("Battle Mockup");
+        battleMockup();
+    }
+    return 0;
 }
