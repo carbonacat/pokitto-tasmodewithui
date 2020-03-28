@@ -6,14 +6,16 @@
 
 namespace ptui
 {
-    // A 8BPP TileMap implementation.
+    // A 8BPP TileMap implementation with a recoloration.
     // Provides the following services:
     // - Set/Get an arbitrary tile. [Tiles Access]
     // - Clear. [Mass Tiles Access]
     // - Shift. [Mass Tiles Access]
     // - Change the Tileset. [Configurations]
     // - Set/Get the offset to the Screen. [Configurations]
+    // - Change the Color Lookup Table. [CLUT]
     // - Render a scanline using the provided Tileset and offset. [Rendering]
+    //
     //
     // - column and row are used for the grid coordinates' names.
     // - x and y are used as the pixel/display coordinates' name.
@@ -27,6 +29,8 @@ namespace ptui
         
     public: // Types & Constants.
         using Tile = std::uint8_t;
+        using ColorOffset = std::uint8_t;
+        using Color8 = std::uint8_t;
         
         static constexpr auto columns = columnsP;
         static constexpr auto rows = rowsP;
@@ -38,8 +42,15 @@ namespace ptui
         static constexpr auto lineWidth = lineWidthP;
         
         
+    public: // Constructors.
+        PaletteTileMap() noexcept
+        {
+            resetCLUT();
+        }
+        
+        
     public: // Configurations.
-        // Changes the origin to the top-left of the display.
+        // Changes the origin to the top-left of the display, in pixel units.
         // - 0, 0 means the top-left pixel of the map will be the same than the top-left pixel of the display.
         void setOffset(int offsetX, int offsetY) noexcept
         {
@@ -80,8 +91,8 @@ namespace ptui
         }
         
         // Must be called before use!
-        // - `tilesetImage` is a 8BPP tileset where each tile is 6x6 pixels.
-        void setTilesetImage(const unsigned char* tilesetImage) noexcept
+        // - `tilesetImage` is a vertical-layout 8BPP tileset where each tile is `tileWidth` * `tileHeight` pixels. No size header.
+        void setTilesetImage(const Color8* tilesetImage) noexcept
         {
             _tilesetImage = tilesetImage;
         }
@@ -95,24 +106,24 @@ namespace ptui
             if (areCoordsValid(column, row))
                 _tiles[_tileIndex(column, row)] = tile;
         }
-        // Same than above, but allows changing the palette offset at the same time.
-        void set(int column, int row, Tile tile, std::uint8_t tilePaletteOffset) noexcept
+        // Same than above, but allows changing the color offset at the same time.
+        void set(int column, int row, Tile tile, ColorOffset tileColorOffset) noexcept
         {
             if (areCoordsValid(column, row))
             {
                 auto tileIndex = _tileIndex(column, row);
                 
                 _tiles[tileIndex] = tile;
-                _tiles[tileIndex + paletteIndexOffset] = tilePaletteOffset;
+                _tiles[tileIndex + colorOffsetIndexOffset] = tileColorOffset;
             }
         }
         
-        // Only changes the palette offset of the target tile.
+        // Only changes the color offset of the target tile.
         // - Safe - If column or row are outside the map, nothing will happen.
-        void setPaletteOffset(int column, int row, std::uint8_t tilePaletteOffset) noexcept
+        void setColorOffset(int column, int row, ColorOffset tileColorOffset) noexcept
         {
             if (areCoordsValid(column, row))
-                _tiles[_tileIndex(column, row) + paletteIndexOffset] = tilePaletteOffset;
+                _tiles[_tileIndex(column, row) + colorOffsetIndexOffset] = tileColorOffset;
         }
         
         // Returns a given tile in this map.
@@ -123,31 +134,51 @@ namespace ptui
                 return _tiles[_tileIndex(column, row)];
             return outsideTile;
         }
+        // Returns the Color Offset for a given Tile.
+        // - Safe - If column or row are outside the map, `outsideColorOffset` is returned.
+        ColorOffset getColorOffset(int column, int row, ColorOffset outsideColorOffset = 0) const noexcept
+        {
+            if (areCoordsValid(column, row))
+                return _tiles[_tileIndex(column, row)];
+            return outsideColorOffset;
+        }
         
     
     public: // Mass Tiles Access.
-        // Sets the whole map to the given Tile (Default Tile will make it blank).
-        void clear(Tile tile = 0, std::uint8_t paletteOffset = 0) noexcept
+    
+        // Clears out the whole tilemap and associated color offsets.
+        void clear(Tile tile = 0, ColorOffset colorOffset = 0) noexcept
         {
-            std::fill(_tiles.begin(), _tiles.begin() + paletteIndexOffset, tile);
-            std::fill(_tiles.begin() + paletteIndexOffset, _tiles.end(), paletteOffset);
+            fill(tile);
+            fillColorOffset(colorOffset);
+        }
+    
+        // Sets the whole map to the given Tile.
+        void fill(Tile tile) noexcept
+        {
+            std::fill(_tiles.begin(), _tiles.begin() + colorOffsetIndexOffset, tile);
+        }
+        // Sets the whole map to the given Tile.
+        void fillColorOffset(ColorOffset colorOffset) noexcept
+        {
+            std::fill(_tiles.begin() + colorOffsetIndexOffset, _tiles.end(), colorOffset);
         }
         
         // Same than above, on a defined area.
         // - `firstColumn`, `firstRow`, `lastColumn` and `lastRow` will be clamped.
         // - `lastColumn` and `lastRow` are included.
         // - Negative and reversed boxes are considered as empty ones.
-        void clear(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
+        void fillRect(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
         {
-            clearUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
-                        tile);
+            fillRectUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                           tile);
         }
         
         // Same than above, but for the palette offset.
-        void clearPaletteOffset(int firstColumn, int firstRow, int lastColumn, int lastRow, std::uint8_t tilePaletteOffset = 0) noexcept
+        void fillRectColorOffset(int firstColumn, int firstRow, int lastColumn, int lastRow, ColorOffset colorOffset = 0) noexcept
         {
-            clearPaletteOffsetUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
-                                     tilePaletteOffset);
+            fillRectColorOffsetUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                                      colorOffset);
         }
         
         // Shift the whole map by `shiftedColumns` columns and `shiftedRows` rows.
@@ -172,13 +203,12 @@ namespace ptui
         
     public: // Rendering.
         // Renders a single line.
-        
-        void fillLine(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        void renderIntoLineBuffer(Color8* lineBuffer, int y, bool skip) noexcept
         {
-            fillLineBaseNew(lineBuffer, y, skip);
+            renderIntoLineBufferCLUT(lineBuffer, y, skip);
         }
         
-        void fillLinePaletteNew(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        void renderIntoLineBufferCLUT(Color8* lineBuffer, int y, bool skip) noexcept
         {
             // Row initialization / change.
             
@@ -212,9 +242,9 @@ namespace ptui
             // Local access is faster than field access.
             auto tileImageRowBase = _tileImageRowBase;
             // Current pixel pointer.
-            std::uint8_t* pixelP = lineBuffer + _indexStart;
+            Color8* pixelP = lineBuffer + _indexStart;
             // Last pixel pointer.
-            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+            Color8* pixelPEnd = lineBuffer + _indexEnd;
             // Current tile pointer.
             const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
             
@@ -229,16 +259,16 @@ namespace ptui
                     auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
                     // Let's render it.
                     // Points to the current pixel in the tile.
-                    const unsigned char* tileImageP = tileImagePStart + _tileSubXStart;
+                    const Color8* tileImageP = tileImagePStart + _tileSubXStart;
                     // Points right after the last pixel in the tile's row.
                     // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                    const unsigned char* tileImagePEnd = tileImagePStart + tileWidth;
+                    const Color8* tileImagePEnd = tileImagePStart + tileWidth;
                     // Which palette to use.
-                    auto palette = _palette + tileP[paletteIndexOffset];
+                    auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
                     
                     for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
                     {
-                        auto tilePixel = palette[*tileImageP];
+                        auto tilePixel = colorLUT[*tileImageP];
                         
                         if (tilePixel != 0)
                             *pixelP = tilePixel;
@@ -260,17 +290,17 @@ namespace ptui
                 // Middle tile!
                 // Let's render it.
                 // Points to the current pixel in the tile.
-                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
                 // Points right after the last pixel in the tile's row.
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const unsigned char* tileImagePEnd = tileImageP + tileWidth;
+                const Color8* tileImagePEnd = tileImageP + tileWidth;
                 // Which palette to use.
-                auto palette = _palette + tileP[paletteIndexOffset];
+                auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
                 
                 // I hope this is unrolled properly.
                 for (int i = 0; i < tileWidth; i++)
                 {
-                    auto tilePixel = palette[*tileImageP];
+                    auto tilePixel = colorLUT[*tileImageP];
                     
                     if (tilePixel != 0)
                         *pixelP = tilePixel;
@@ -286,16 +316,16 @@ namespace ptui
                 // Last tile!
                 // Let's render it.
                 // Points to the current pixel in the tile.
-                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
                 // Points right after the last pixel in the tile's row.
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const unsigned char* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
+                const Color8* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
                 // Which palette to use.
-                auto palette = _palette + tileP[paletteIndexOffset];
+                auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
                 
                 for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
                 {
-                    auto tilePixel = palette[*tileImageP];
+                    auto tilePixel = colorLUT[*tileImageP];
                     
                     if (tilePixel != 0)
                         *pixelP = tilePixel;
@@ -304,117 +334,7 @@ namespace ptui
             }
         }
         
-        void fillLinePaletteOld(std::uint8_t* lineBuffer, int y, bool skip) noexcept
-        {
-            // Row initialization / change.
-            
-            if (y == 0)
-            {
-                _tileY = _tileYStart;
-                _tileSubY = _tileSubYStart;
-                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
-            }
-            else
-            {
-                if (_tileSubY == tileHeight - 1)
-                {
-                    // Onto the next row!
-                    _tileSubY = 0;
-                    _tileY++;
-                    _tileImageRowBase = _tilesetImage;
-                }
-                else
-                {
-                    // Onto the next pixel line of the same tile row!
-                    _tileSubY++;
-                    _tileImageRowBase += tileWidth;
-                }
-            }
-            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)))
-                return ;
-            
-            // Scanline rendition.
-            
-            auto tileImageRowBase = _tileImageRowBase; // Won't mutate, will be read in a loop -> stored locally.
-            
-            // TODO: For a given row, this code's execution is the same, except for the tileDataP and tileDataPLast which are offset by one tile's line each time.
-            // TODO: Could be moved into the row change section above, at the cost of RAM.
-            // Points to the first tile of the row.
-            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
-            std::uint8_t* pixelP = lineBuffer + _indexStart;
-            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
-            auto tileSubXStart = _tileSubXStart;
-
-            if (*tileP == 0)
-            {
-                // Empty first tile. Gonna skip it!
-                // We might have an offset, so we must take account of it (_tileSubXStart).
-                auto initialSkip = tileWidth - tileSubXStart;
-                
-                tileP++;
-                pixelP += initialSkip;
-                
-                // Automatically skip any other empty tiles.
-                while ((pixelP < pixelPEnd) && (*tileP == 0))
-                {
-                    tileP++;
-                    pixelP += tileWidth;
-                }
-                tileSubXStart = 0;
-            }
-            const unsigned char* tileImagePLast;
-            const unsigned char* tileImageP;
-            
-            // Automatically skip any empty tiles.
-            while ((pixelP < pixelPEnd) && (*tileP == 0))
-            {
-                tileP++;
-                pixelP += tileWidth;
-            }
-            
-            // Configures the initial tile.
-            {
-                auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
-                
-                tileImageP = tileImagePStart + tileSubXStart;
-                tileImagePLast = tileImagePStart + tileWidth - 1;
-            }
-            auto palette = _palette + tileP[paletteIndexOffset];
-            
-            // Iterates over all the concerned pixels.
-            for (; pixelP < pixelPEnd; pixelP++)
-            {
-                // TODO: Not need to check for both "pixelP < pixelPEnd" and "tileDataP == tileDataPLast" here. Could be done with a carefully crafted end.
-                {
-                    auto tilePixel = palette[*tileImageP];
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                }
-                if (tileImageP == tileImagePLast)
-                {
-                    // Onto the next tile in the row!
-                    tileP++;
-                    palette = _palette + tileP[paletteIndexOffset];
-                    
-                    // Automatically skip any empty tiles.
-                    while ((pixelP < pixelPEnd) && (*tileP == 0))
-                    {
-                        tileP++;
-                        pixelP += tileWidth;
-                    }
-                    
-                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
-                    
-                    tileImageP = tileImagePStart;
-                    tileImagePLast = tileImagePStart + tileWidth - 1;
-                }
-                else
-                    tileImageP++;
-            }
-        }
-        
-        void fillLineBaseNew(std::uint8_t* lineBuffer, int y, bool skip) noexcept
+        void renderIntoLineBufferBase(Color8* lineBuffer, int y, bool skip) noexcept
         {
             // Row initialization / change.
             
@@ -448,9 +368,9 @@ namespace ptui
             // Local access is faster than field access.
             auto tileImageRowBase = _tileImageRowBase;
             // Current pixel pointer.
-            std::uint8_t* pixelP = lineBuffer + _indexStart;
+            Color8* pixelP = lineBuffer + _indexStart;
             // Last pixel pointer.
-            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
+            Color8* pixelPEnd = lineBuffer + _indexEnd;
             // Current tile pointer.
             const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
             
@@ -465,10 +385,10 @@ namespace ptui
                     auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
                     // Let's render it.
                     // Points to the current pixel in the tile.
-                    const unsigned char* tileImageP = tileImagePStart + _tileSubXStart;
+                    const Color8* tileImageP = tileImagePStart + _tileSubXStart;
                     // Points right after the last pixel in the tile's row.
                     // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                    const unsigned char* tileImagePEnd = tileImagePStart + tileWidth;
+                    const Color8* tileImagePEnd = tileImagePStart + tileWidth;
                     
                     for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
                     {
@@ -494,10 +414,10 @@ namespace ptui
                 // Middle tile!
                 // Let's render it.
                 // Points to the current pixel in the tile.
-                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
                 // Points right after the last pixel in the tile's row.
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const unsigned char* tileImagePEnd = tileImageP + tileWidth;
+                const Color8* tileImagePEnd = tileImageP + tileWidth;
                 
                 // I hope this is unrolled properly.
                 for (int i = 0; i < tileWidth; i++)
@@ -518,10 +438,10 @@ namespace ptui
                 // Last tile!
                 // Let's render it.
                 // Points to the current pixel in the tile.
-                const unsigned char* tileImageP = tileImageRowBase + *tileP * tileSize;
+                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
                 // Points right after the last pixel in the tile's row.
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const unsigned char* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
+                const Color8* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
                 
                 for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
                 {
@@ -531,114 +451,6 @@ namespace ptui
                         *pixelP = tilePixel;
                 }
                 tileP++;
-            }
-        }
-        
-        void fillLineBaseOld(std::uint8_t* lineBuffer, int y, bool skip) noexcept
-        {
-            // Row initialization / change.
-            
-            if (y == 0)
-            {
-                _tileY = _tileYStart;
-                _tileSubY = _tileSubYStart;
-                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
-            }
-            else
-            {
-                if (_tileSubY == tileHeight - 1)
-                {
-                    // Onto the next row!
-                    _tileSubY = 0;
-                    _tileY++;
-                    _tileImageRowBase = _tilesetImage;
-                }
-                else
-                {
-                    // Onto the next pixel line of the same tile row!
-                    _tileSubY++;
-                    _tileImageRowBase += tileWidth;
-                }
-            }
-            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)))
-                return ;
-            
-            // Scanline rendition.
-            
-            auto tileImageRowBase = _tileImageRowBase; // Won't mutate, will be read in a loop -> stored locally.
-            
-            // TODO: For a given row, this code's execution is the same, except for the tileDataP and tileDataPLast which are offset by one tile's line each time.
-            // TODO: Could be moved into the row change section above, at the cost of RAM.
-            // Points to the first tile of the row.
-            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
-            std::uint8_t* pixelP = lineBuffer + _indexStart;
-            std::uint8_t* pixelPEnd = lineBuffer + _indexEnd;
-            auto tileSubXStart = _tileSubXStart;
-
-            if (*tileP == 0)
-            {
-                // Empty first tile. Gonna skip it!
-                // We might have an offset, so we must take account of it (_tileSubXStart).
-                auto initialSkip = tileWidth - tileSubXStart;
-                
-                tileP++;
-                pixelP += initialSkip;
-                
-                // Automatically skip any other empty tiles.
-                while ((pixelP < pixelPEnd) && (*tileP == 0))
-                {
-                    tileP++;
-                    pixelP += tileWidth;
-                }
-                tileSubXStart = 0;
-            }
-            const unsigned char* tileImagePLast;
-            const unsigned char* tileImageP;
-            
-            // Automatically skip any empty tiles.
-            while ((pixelP < pixelPEnd) && (*tileP == 0))
-            {
-                tileP++;
-                pixelP += tileWidth;
-            }
-            
-            // Configures the initial tile.
-            {
-                auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
-                
-                tileImageP = tileImagePStart + tileSubXStart;
-                tileImagePLast = tileImagePStart + tileWidth - 1;
-            }
-            
-            // Iterates over all the concerned pixels.
-            for (; pixelP < pixelPEnd; pixelP++)
-            {
-                // TODO: Not need to check for both "pixelP < pixelPEnd" and "tileDataP == tileDataPLast" here. Could be done with a carefully crafted end.
-                {
-                    auto tilePixel = *tileImageP;
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                }
-                if (tileImageP == tileImagePLast)
-                {
-                    // Onto the next tile in the row!
-                    tileP++;
-                    
-                    // Automatically skip any empty tiles.
-                    while ((pixelP < pixelPEnd) && (*tileP == 0))
-                    {
-                        tileP++;
-                        pixelP += tileWidth;
-                    }
-                    
-                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
-                    
-                    tileImageP = tileImagePStart;
-                    tileImagePLast = tileImagePStart + tileWidth - 1;
-                }
-                else
-                    tileImageP++;
             }
         }
         
@@ -661,32 +473,44 @@ namespace ptui
         }
         
         
-    public: // Palette manipulation.
+    public: // CLUT.
     
-        // Changes the palette offset for a given color.
-        void setPaletteOffset(std::uint8_t color, std::uint8_t offset) noexcept
+        // Remaps a color to a new one.
+        // - That is, when `color` is encountered in the Tileset, `newColor` will be returned instead.
+        // - Using `0` as `newColor` will make the color transparent!
+        void mapColor(Color8 color, Color8 newColor) noexcept
         {
-            _palette[color] = offset;
+            _colorLUT[color] = newColor;
+        }
+        
+        // Resets the mapping to a default x => x setting.
+        void resetCLUT() noexcept
+        {
+            Color8 color = 0;
+            
+            // Fills the default color lookup table with the same colors.
+            for (auto& mappedColor: _colorLUT)
+                mappedColor = color++;
         }
         
         
     protected: // Unsafe implementations.
-        // clear, but columns & rows are considered valid within the grid.
-        void clearUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
+        // fillRect, but columns & rows are considered valid within the grid.
+        void fillRectUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile) noexcept
         {
-            // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
+            // TODO: Optimizable with cached indexes calculation.
             for (int row = firstRow; row <= lastRow; row++)
                 for (int column = firstColumn; column <= lastColumn; column++)
                     set(column, row, tile);
         }
         
-        // clearPaletteOffset, but columns & rows are considered valid within the grid.
-        void clearPaletteOffsetUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, std::uint8_t paletteOffset = 0) noexcept
+        // fillRectColorOffset, but columns & rows are considered valid within the grid.
+        void fillRectColorOffsetUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, ColorOffset colorOffset) noexcept
         {
-            // TODO: Optimizable with cached indexes calculation. (but is it worth it? :P)
+            // TODO: Optimizable with cached indexes calculation.
             for (int row = firstRow; row <= lastRow; row++)
                 for (int column = firstColumn; column <= lastColumn; column++)
-                    setPaletteOffset(column, row, paletteOffset);
+                    setColorOffset(column, row, colorOffset);
         }
         
         // shift, but columns & rows are considered valid within the grid.
@@ -729,14 +553,17 @@ namespace ptui
                 shiftRowIncrement = -1;
             }
             for (int row = shiftFirstRow; row != shiftEndRow; row += shiftRowIncrement)
+            {
+                // TODO: Can be sped up with MemOps.
                 for (int column = shiftFirstColumn; column != shiftEndColumn; column += shiftColumnIncrement)
                     set(column, row, get(column - shiftedColumns, row - shiftedRows));
+            }
         }
     
     private:
-        using Tiles = std::array<Tile, columns * rows * 2>; // Doubled as the second part holds the palette offsets.
+        using TilesAndColorOffsets = std::array<Tile, columns * rows * 2>; // Doubled as the second part holds the palette offsets.
         
-        static constexpr auto paletteIndexOffset = columns * rows;
+        static constexpr auto colorOffsetIndexOffset = columns * rows;
     
         static constexpr auto _tileIndex(short tileX, short tileY) noexcept
         {
@@ -760,20 +587,12 @@ namespace ptui
         short _tileSubYStart = 0;
         
         // Derived from _tilesetImage
-        const unsigned char* _tileImageRowBase = nullptr;
+        const Color8* _tileImageRowBase = nullptr;
 
-        const unsigned char* _tilesetImage = nullptr;
-        Tiles _tiles = {};
+        const Color8* _tilesetImage = nullptr;
+        TilesAndColorOffsets _tiles = {};
         
-        std::uint8_t _palette[256] =
-        {
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 1, 2, 3, 4, 5+88, 6+88, 7,
-            0, 1, 2, 3, 4, 5+136, 6+136, 7,
-            0, 1, 2, 3, 4, 5+112, 6+112, 7,
-            0, 1, 2, 3, 4, 5, 6, 7,
-            0, 0, 2, 3, 4, 5, 6, 7,
-        };
+        Color8 _colorLUT[256];
     };
 }
 

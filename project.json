@@ -9,7 +9,7 @@
 	"libs": {
 		"Pokitto": [
 			{
-				"recurse": "${appPath}/PokittoLib/Pokitto",
+				"recurse": "${projectPath}/../PokittoLib/Pokitto",
 				"ignore": "POKITTO_SIM|POKITTO_XTERNALS|Documentation|examples?|Physics|(?:.*_SIM.*)|main.cpp"
 			}
 		]
@@ -403,6 +403,9 @@
 			"sdcard": false
 		},
 		"\\bin\\2020-03-26 - TASModeUI - Rainbow.gif": {
+			"sdcard": false
+		},
+		"\\src\\Pokitto": {
 			"sdcard": false
 		}
 	},

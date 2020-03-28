@@ -127,7 +127,7 @@ namespace ptui
                 return ;
             if ((firstColumn == lastColumn) || (firstRow == lastRow))
             {
-                this->clear(firstColumn, firstRow, lastColumn, lastRow, TilesetDefinition::boxMiddle);
+                this->fillRect(firstColumn, firstRow, lastColumn, lastRow, TilesetDefinition::boxMiddle);
                 return ;
             }
             
@@ -138,14 +138,14 @@ namespace ptui
             this->set(lastColumn, lastRow, TilesetDefinition::boxBottomRight);
             
             // Borders.
-            this->clear(firstColumn + 1, firstRow, lastColumn - 1, firstRow, TilesetDefinition::boxTop);
-            this->clear(firstColumn + 1, lastRow, lastColumn - 1, lastRow, TilesetDefinition::boxBottom);
+            this->fillRect(firstColumn + 1, firstRow, lastColumn - 1, firstRow, TilesetDefinition::boxTop);
+            this->fillRect(firstColumn + 1, lastRow, lastColumn - 1, lastRow, TilesetDefinition::boxBottom);
             
-            this->clear(firstColumn, firstRow + 1, firstColumn, lastRow - 1, TilesetDefinition::boxLeft);
-            this->clear(lastColumn, firstRow + 1, lastColumn, lastRow - 1, TilesetDefinition::boxRight);
+            this->fillRect(firstColumn, firstRow + 1, firstColumn, lastRow - 1, TilesetDefinition::boxLeft);
+            this->fillRect(lastColumn, firstRow + 1, lastColumn, lastRow - 1, TilesetDefinition::boxRight);
             
             // Inside.
-            this->clear(firstColumn + 1, firstRow + 1, lastColumn - 1, lastRow - 1, TilesetDefinition::boxMiddle);
+            this->fillRect(firstColumn + 1, firstRow + 1, lastColumn - 1, lastRow - 1, TilesetDefinition::boxMiddle);
         }
         
         
@@ -199,7 +199,7 @@ namespace ptui
                     // Autoscroll.
                     this->shift(_cursorFirstColumn, _cursorFirstRow, _cursorLastColumn, _cursorLastRow,
                           0, -1);
-                    this->clear(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle);
+                    this->fillRect(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle);
                     _cursorRow = _cursorLastRow;
                 }
             }
