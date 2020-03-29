@@ -31,6 +31,142 @@ namespace ptui
         }
     };
     
+    template<bool transparentZeroColor, bool colorLookUp, bool colorOffset, int colorOffsetIndexOffset>
+    struct TileLineOutput
+    {
+        using Color8 = std::uint8_t;
+        using Tile = std::uint8_t;
+        
+        static void output(const Tile* tileP, const Color8* originalColorLUT,
+                           const Color8* tileImageP, const Color8* tileImagePEnd,
+                           Color8*& pixelP) noexcept
+        {
+            for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+            {
+                auto tilePixel = *tileImageP;
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+        
+        template<int tileWidth>
+        static void outputFixed(const Tile* tileP, const Color8* originalColorLUT,
+                                const Color8* tileImageP,
+                                Color8*& pixelP) noexcept
+        {
+            for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
+            {
+                auto tilePixel = *tileImageP;
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+    };
+    template<bool transparentZeroColor, int colorOffsetIndexOffset>
+    struct TileLineOutput<transparentZeroColor, false, true, colorOffsetIndexOffset>
+    {
+        using Color8 = std::uint8_t;
+        using Tile = std::uint8_t;
+        
+        static void output(const Tile* tileP, const Color8* originalColorLUT,
+                           const Color8* tileImageP, const Color8* tileImagePEnd,
+                           Color8*& pixelP) noexcept
+        {
+            auto tileColorOffset = tileP[colorOffsetIndexOffset];
+            
+            for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+            {
+                auto tilePixel = *tileImageP + tileColorOffset;
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+        
+        template<int tileWidth>
+        static void outputFixed(const Tile* tileP, const Color8* originalColorLUT,
+                                const Color8* tileImageP,
+                                Color8*& pixelP) noexcept
+        {
+            auto tileColorOffset = tileP[colorOffsetIndexOffset];
+            
+            for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
+            {
+                auto tilePixel = *tileImageP + tileColorOffset;
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+    };
+    template<bool transparentZeroColor, int colorOffsetIndexOffset>
+    struct TileLineOutput<transparentZeroColor, true, false, colorOffsetIndexOffset>
+    {
+        using Color8 = std::uint8_t;
+        using Tile = std::uint8_t;
+        
+        static void output(const Tile* tileP, const Color8* originalColorLUT,
+                           const Color8* tileImageP, const Color8* tileImagePEnd,
+                           Color8*& pixelP) noexcept
+        {
+            for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+            {
+                auto tilePixel = originalColorLUT[*tileImageP];
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+        
+        template<int tileWidth>
+        static void outputFixed(const Tile* tileP, const Color8* originalColorLUT,
+                                const Color8* tileImageP,
+                                Color8*& pixelP) noexcept
+        {
+            auto tileColorOffset = tileP[colorOffsetIndexOffset];
+            
+            for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
+            {
+                auto tilePixel = originalColorLUT[*tileImageP];
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+    };
+    template<bool transparentZeroColor, int colorOffsetIndexOffset>
+    struct TileLineOutput<transparentZeroColor, true, true, colorOffsetIndexOffset>
+    {
+        using Color8 = std::uint8_t;
+        using Tile = std::uint8_t;
+        
+        static void output(const Tile* tileP, const Color8* originalColorLUT,
+                           const Color8* tileImageP, const Color8* tileImagePEnd,
+                           Color8*& pixelP) noexcept
+        {
+            // Which palette to use.
+            auto colorLut = originalColorLUT + tileP[colorOffsetIndexOffset];
+            
+            for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
+            {
+                auto tilePixel = colorLut[*tileImageP];
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+        
+        template<int tileWidth>
+        static void outputFixed(const Tile* tileP, const Color8* originalColorLUT,
+                                const Color8* tileImageP,
+                                Color8*& pixelP) noexcept
+        {
+            // Which palette to use.
+            auto colorLut = originalColorLUT + tileP[colorOffsetIndexOffset];
+            
+            for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
+            {
+                auto tilePixel = colorLut[*tileImageP];
+                
+                PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
+            }
+        }
+    };
     
     
     template<unsigned columnsP, unsigned rowsP,
@@ -93,56 +229,9 @@ namespace ptui
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
                 const Color8* tileImagePEnd = tileImagePStart + tileWidth;
                 
-                if (colorLookUp)
-                {
-                    if (colorOffset)
-                    {
-                        // Which palette to use.
-                        auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
-                        
-                        for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = colorLUT[*tileImageP];
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                    else
-                    {
-                        // Which palette to use.
-                        auto colorLUT = _colorLUT;
-                        
-                        for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = colorLookUp ? (colorLUT[*tileImageP]) : (*tileImageP);
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                }
-                else
-                {
-                    if (colorOffset)
-                    {
-                        auto tileColorOffset = tileP[colorOffsetIndexOffset];
-                        
-                        for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = *tileImageP + tileColorOffset;
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                    else
-                    {
-                        for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = *tileImageP;
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                }
+                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, colorOffsetIndexOffset>::output(tileP, _colorLUT,
+                                                                                                               tileImageP, tileImagePEnd,
+                                                                                                               pixelP);
             }
             tileP++;
         }
@@ -157,61 +246,10 @@ namespace ptui
                 // Let's render it.
                 // Points to the current pixel in the tile.
                 const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
-                // Points right after the last pixel in the tile's row.
-                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const Color8* tileImagePEnd = tileImageP + tileWidth;
                 
-                
-                if (colorLookUp)
-                {
-                    if (colorOffset)
-                    {
-                        // Which palette to use.
-                        auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
-                        
-                        for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = colorLUT[*tileImageP];
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                    else
-                    {
-                        // Which palette to use.
-                        auto colorLUT = _colorLUT;
-                        
-                        for (int i = 0; i < tileWidth; i++, pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = colorLookUp ? (colorLUT[*tileImageP]) : (*tileImageP);
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                }
-                else
-                {
-                    if (colorOffset)
-                    {
-                        auto tileColorOffset = tileP[colorOffsetIndexOffset];
-                        
-                        for (int i = 0; i < tileWidth; i++, pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = *tileImageP + tileColorOffset;
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < tileWidth; i++, pixelP++, tileImageP++)
-                        {
-                            auto tilePixel = *tileImageP;
-                            
-                            PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                        }
-                    }
-                }
+                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, colorOffsetIndexOffset>:: template outputFixed<tileWidth>(tileP, _colorLUT,
+                                                                                                                                         tileImageP,
+                                                                                                                                         pixelP);
             }
             else
                 pixelP += tileWidth;
@@ -229,56 +267,9 @@ namespace ptui
             // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
             const Color8* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
             
-            if (colorLookUp)
-            {
-                if (colorOffset)
-                {
-                    // Which palette to use.
-                    auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
-                    
-                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                    {
-                        auto tilePixel = colorLUT[*tileImageP];
-                        
-                        PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                    }
-                }
-                else
-                {
-                    // Which palette to use.
-                    auto colorLUT = _colorLUT;
-                    
-                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                    {
-                        auto tilePixel = colorLookUp ? (colorLUT[*tileImageP]) : (*tileImageP);
-                        
-                        PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                    }
-                }
-            }
-            else
-            {
-                if (colorOffset)
-                {
-                    auto tileColorOffset = tileP[colorOffsetIndexOffset];
-                    
-                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                    {
-                        auto tilePixel = *tileImageP + tileColorOffset;
-                        
-                        PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                    }
-                }
-                else
-                {
-                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                    {
-                        auto tilePixel = *tileImageP;
-                        
-                        PixelOutput<transparentZeroColor>::output(*pixelP, tilePixel);
-                    }
-                }
-            }
+            TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, colorOffsetIndexOffset>::output(tileP, _colorLUT,
+                                                                                                           tileImageP, tileImagePEnd,
+                                                                                                           pixelP);
             tileP++;
         }
     }
