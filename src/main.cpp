@@ -8,6 +8,9 @@
 #include "ptui/TASTerminalTileMap.hpp"
 
 int transition = 0;
+bool renderTransparency = false;
+bool renderCLUT = false;
+bool renderColorOffset = false;
 
 void GameFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
 {
@@ -22,14 +25,50 @@ void GameFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
         std::fill(line, line + PROJ_LCDWIDTH, 0);
 }
 
-void TerminalTMFillerCLUT(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+void TerminalTMFiller000(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
 {
-    ptui::tasUITileMap.renderIntoLineBufferCLUT(line, y, skip);
+    ptui::tasUITileMap.renderIntoLineBuffer<false, false, false>(line, y, skip);
 }
-void TerminalTMFillerBase(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+void TerminalTMFiller001(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
 {
-    ptui::tasUITileMap.renderIntoLineBufferBase(line, y, skip);
+    ptui::tasUITileMap.renderIntoLineBuffer<false, false, true>(line, y, skip);
 }
+void TerminalTMFiller010(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.renderIntoLineBuffer<false, true, false>(line, y, skip);
+}
+void TerminalTMFiller011(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.renderIntoLineBuffer<false, true, true>(line, y, skip);
+}
+void TerminalTMFiller100(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.renderIntoLineBuffer<true, false, false>(line, y, skip);
+}
+void TerminalTMFiller101(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.renderIntoLineBuffer<true, false, true>(line, y, skip);
+}
+void TerminalTMFiller110(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.renderIntoLineBuffer<true, true, false>(line, y, skip);
+}
+void TerminalTMFiller111(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
+{
+    ptui::tasUITileMap.renderIntoLineBuffer<true, true, true>(line, y, skip);
+}
+
+TAS::LineFiller availableLineFillers[8]
+{
+    TerminalTMFiller000,
+    TerminalTMFiller001,
+    TerminalTMFiller010,
+    TerminalTMFiller011,
+    TerminalTMFiller100,
+    TerminalTMFiller101,
+    TerminalTMFiller110,
+    TerminalTMFiller111,
+};
 
 int battleMockup()
 {
@@ -414,8 +453,12 @@ int intermission(const char* nextScene)
         if (!PC::update()) 
             continue;
         
-        if (PB::rightBtn()) PD::lineFillers[2] = TerminalTMFillerBase;
-        if (PB::upBtn()) PD::lineFillers[2] = TerminalTMFillerCLUT;
+        if (PB::leftBtn()) renderTransparency = false;
+        if (PB::rightBtn()) renderTransparency = true;
+        if (PB::upBtn()) renderCLUT = true;
+        if (PB::downBtn()) renderCLUT = false;
+        if (PB::aBtn()) renderColorOffset = true;
+        if (PB::bBtn()) renderColorOffset = false;
         
         ptui::tasUITileMap.drawBox(1, 1, 30, 3);
         ptui::tasUITileMap.setCursor(2, 2);
@@ -425,11 +468,12 @@ int intermission(const char* nextScene)
         
         ptui::tasUITileMap.drawBox(1, 5, 36, 7);
         ptui::tasUITileMap.setCursor(2, 6);
-        ptui::tasUITileMap.printString("UI rend:");
-        if (PD::lineFillers[2] == TerminalTMFillerBase)
-            ptui::tasUITileMap.printString("TerminalTMFillerBase");
-        if (PD::lineFillers[2] == TerminalTMFillerCLUT)
-            ptui::tasUITileMap.printString("TerminalTMFillerCLUT");
+        ptui::tasUITileMap.printString("Trans=");
+        ptui::tasUITileMap.printString(renderTransparency ? "ON" : "OFF");
+        ptui::tasUITileMap.printString(", CLUT=");
+        ptui::tasUITileMap.printString(renderCLUT ? "ON" : "OFF");
+        ptui::tasUITileMap.printString(", COff=");
+        ptui::tasUITileMap.printString(renderColorOffset ? "ON" : "OFF");
 
         ticks++;
         if (ticks == 60)
@@ -440,6 +484,10 @@ int intermission(const char* nextScene)
             ptui::tasUITileMap.setCursor(32, 2);
             ptui::tasUITileMap.printInteger(PC::fps_counter);
         }
+        
+        int lineFillerIndex = (renderTransparency ? 4 : 0) + (renderCLUT ? 2 : 0) | (renderColorOffset ? 1 : 0);
+        
+        PD::lineFillers[2] = availableLineFillers[lineFillerIndex];
     }
     
     return 0;
@@ -453,7 +501,7 @@ int main() noexcept
     
     PC::begin();
     PD::loadRGBPalette(miloslav);
-    PD::lineFillers[2] = TerminalTMFillerBase;
+    PD::lineFillers[2] = availableLineFillers[0];
     
     while (PC::isRunning())
     {

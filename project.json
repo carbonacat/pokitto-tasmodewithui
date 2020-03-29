@@ -407,6 +407,12 @@
 		},
 		"\\src\\Pokitto": {
 			"sdcard": false
+		},
+		"\\src\\ptui\\CuteTileMap.hpp": {
+			"sdcard": false
+		},
+		"\\src\\ptui\\CuteTileMap.Rendering.hpp": {
+			"sdcard": false
 		}
 	},
 	"BUILDFlags": {

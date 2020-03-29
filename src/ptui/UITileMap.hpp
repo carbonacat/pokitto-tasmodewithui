@@ -1,7 +1,7 @@
 #ifndef PTUI_UITILEMAP_HPP
 #   define PTUI_UITILEMAP_HPP
 
-#   include "ptui/PaletteTileMap.hpp"
+#   include "ptui/CuteTileMap.hpp"
 
 
 namespace ptui
@@ -49,7 +49,7 @@ namespace ptui
              unsigned lineWidthP,
              typename TilesetDefinition = UITilesetDefinition>
     class UITileMap:
-        public PaletteTileMap<columnsP, rowsP,
+        public CuteTileMap<columnsP, rowsP,
                            tileWidthP, tileHeightP,
                            lineWidthP>
     {

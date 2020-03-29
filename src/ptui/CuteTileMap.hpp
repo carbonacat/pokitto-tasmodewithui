@@ -1,12 +1,13 @@
-#ifndef PTUI_PALETTETILEMAP_HPP
-#   define PTUI_PALETTETILEMAP_HPP
+#ifndef PTUI_CUTETILEMAP_HPP
+#   define PTUI_CUTETILEMAP_HPP
 
 #   include <array>
 
 
 namespace ptui
 {
-    // A 8BPP TileMap implementation with a recoloration.
+    // Color lookUp, Transparency and color-offsEt TileMap.
+    // A 8BPP TileMap implementation with optional color lookup, optional transparency and optional per-tile color-offset.
     // Provides the following services:
     // - Set/Get an arbitrary tile. [Tiles Access]
     // - Clear. [Mass Tiles Access]
@@ -23,7 +24,7 @@ namespace ptui
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
              unsigned lineWidthP>
-    class PaletteTileMap
+    class CuteTileMap
     {
         static_assert(lineWidthP > tileWidthP);
         
@@ -43,7 +44,7 @@ namespace ptui
         
         
     public: // Constructors.
-        PaletteTileMap() noexcept
+        CuteTileMap() noexcept
         {
             resetCLUT();
         }
@@ -203,256 +204,15 @@ namespace ptui
         
     public: // Rendering.
         // Renders a single line.
-        void renderIntoLineBuffer(Color8* lineBuffer, int y, bool skip) noexcept
-        {
-            renderIntoLineBufferCLUT(lineBuffer, y, skip);
-        }
+        // - If `transparentZeroColor` is true, any color resolved (that is, after offset and lookup) to 0 will leave the current color in place.
+        // - If `colorLookUp` is true, the tileset's color will be looked up using the embedded Color LookUp Table.
+        //   - Will produce a compilation error if this instance doesn't support Color LookUp.
+        // - If `colorOffset` is true, each tile's color will be offset by the tile's offset.
+        //   - Happens before the Color LookUp step if any.
+        //   - Will produce a compilation error if this instance doesn't support Tile Color Offset.
+        template<bool transparentZeroColor, bool colorLookUp, bool colorOffset>
+        void renderIntoLineBuffer(Color8* lineBuffer, int y, bool skip) noexcept;
         
-        void renderIntoLineBufferCLUT(Color8* lineBuffer, int y, bool skip) noexcept
-        {
-            // Row initialization / change.
-            
-            if (y == 0)
-            {
-                _tileY = _tileYStart;
-                _tileSubY = _tileSubYStart;
-                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
-            }
-            else
-            {
-                if (_tileSubY == tileHeight - 1)
-                {
-                    // Onto the next row!
-                    _tileSubY = 0;
-                    _tileY++;
-                    _tileImageRowBase = _tilesetImage;
-                }
-                else
-                {
-                    // Onto the next pixel line of the same tile row!
-                    _tileSubY++;
-                    _tileImageRowBase += tileWidth;
-                }
-            }
-            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)) || (_indexStart >= _indexEnd))
-                return ;
-            
-            // Scanline rendition.
-            
-            // Local access is faster than field access.
-            auto tileImageRowBase = _tileImageRowBase;
-            // Current pixel pointer.
-            Color8* pixelP = lineBuffer + _indexStart;
-            // Last pixel pointer.
-            Color8* pixelPEnd = lineBuffer + _indexEnd;
-            // Current tile pointer.
-            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
-            
-            // Is the first tile cut in half?
-            if (_tileSubXStart != 0)
-            {
-                // Is the tile empty?
-                if (*tileP == 0)
-                    pixelP += tileWidth - _tileSubXStart;
-                else
-                {
-                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
-                    // Let's render it.
-                    // Points to the current pixel in the tile.
-                    const Color8* tileImageP = tileImagePStart + _tileSubXStart;
-                    // Points right after the last pixel in the tile's row.
-                    // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                    const Color8* tileImagePEnd = tileImagePStart + tileWidth;
-                    // Which palette to use.
-                    auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
-                    
-                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                    {
-                        auto tilePixel = colorLUT[*tileImageP];
-                        
-                        if (tilePixel != 0)
-                            *pixelP = tilePixel;
-                    }
-                }
-                tileP++;
-            }
-            
-            // Let's render the middle tiles.
-            while (pixelP + tileWidth <= pixelPEnd)
-            {
-                // Let's skip any empty middle tiles.
-                while ((*tileP == 0) && (pixelP + tileWidth < pixelPEnd))
-                {
-                    tileP++;
-                    pixelP += tileWidth;
-                }
-                
-                // Middle tile!
-                // Let's render it.
-                // Points to the current pixel in the tile.
-                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
-                // Points right after the last pixel in the tile's row.
-                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const Color8* tileImagePEnd = tileImageP + tileWidth;
-                // Which palette to use.
-                auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
-                
-                // I hope this is unrolled properly.
-                for (int i = 0; i < tileWidth; i++)
-                {
-                    auto tilePixel = colorLUT[*tileImageP];
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                    pixelP++;
-                    tileImageP++;
-                }
-                tileP++;
-            }
-            
-            // Let's render the last tile, if there is one.
-            if ((pixelP < pixelPEnd) && (*tileP != 0))
-            {
-                // Last tile!
-                // Let's render it.
-                // Points to the current pixel in the tile.
-                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
-                // Points right after the last pixel in the tile's row.
-                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const Color8* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
-                // Which palette to use.
-                auto colorLUT = _colorLUT + tileP[colorOffsetIndexOffset];
-                
-                for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                {
-                    auto tilePixel = colorLUT[*tileImageP];
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                }
-                tileP++;
-            }
-        }
-        
-        void renderIntoLineBufferBase(Color8* lineBuffer, int y, bool skip) noexcept
-        {
-            // Row initialization / change.
-            
-            if (y == 0)
-            {
-                _tileY = _tileYStart;
-                _tileSubY = _tileSubYStart;
-                _tileImageRowBase = _tilesetImage + _tileSubY * tileWidth;
-            }
-            else
-            {
-                if (_tileSubY == tileHeight - 1)
-                {
-                    // Onto the next row!
-                    _tileSubY = 0;
-                    _tileY++;
-                    _tileImageRowBase = _tilesetImage;
-                }
-                else
-                {
-                    // Onto the next pixel line of the same tile row!
-                    _tileSubY++;
-                    _tileImageRowBase += tileWidth;
-                }
-            }
-            if ((skip) || (y < _offsetY) || (_tileY >= static_cast<int>(rows)) || (_indexStart >= _indexEnd))
-                return ;
-            
-            // Scanline rendition.
-            
-            // Local access is faster than field access.
-            auto tileImageRowBase = _tileImageRowBase;
-            // Current pixel pointer.
-            Color8* pixelP = lineBuffer + _indexStart;
-            // Last pixel pointer.
-            Color8* pixelPEnd = lineBuffer + _indexEnd;
-            // Current tile pointer.
-            const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
-            
-            // Is the first tile cut in half?
-            if (_tileSubXStart != 0)
-            {
-                // Is the tile empty?
-                if (*tileP == 0)
-                    pixelP += tileWidth - _tileSubXStart;
-                else
-                {
-                    auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
-                    // Let's render it.
-                    // Points to the current pixel in the tile.
-                    const Color8* tileImageP = tileImagePStart + _tileSubXStart;
-                    // Points right after the last pixel in the tile's row.
-                    // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                    const Color8* tileImagePEnd = tileImagePStart + tileWidth;
-                    
-                    for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                    {
-                        auto tilePixel = *tileImageP;
-                        
-                        if (tilePixel != 0)
-                            *pixelP = tilePixel;
-                    }
-                }
-                tileP++;
-            }
-            
-            // Let's render the middle tiles.
-            while (pixelP + tileWidth <= pixelPEnd)
-            {
-                // Let's skip any empty middle tiles.
-                while ((*tileP == 0) && (pixelP + tileWidth < pixelPEnd))
-                {
-                    tileP++;
-                    pixelP += tileWidth;
-                }
-                
-                // Middle tile!
-                // Let's render it.
-                // Points to the current pixel in the tile.
-                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
-                // Points right after the last pixel in the tile's row.
-                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const Color8* tileImagePEnd = tileImageP + tileWidth;
-                
-                // I hope this is unrolled properly.
-                for (int i = 0; i < tileWidth; i++)
-                {
-                    auto tilePixel = *tileImageP;
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                    pixelP++;
-                    tileImageP++;
-                }
-                tileP++;
-            }
-            
-            // Let's render the last tile, if there is one.
-            if ((pixelP < pixelPEnd) && (*tileP != 0))
-            {
-                // Last tile!
-                // Let's render it.
-                // Points to the current pixel in the tile.
-                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
-                // Points right after the last pixel in the tile's row.
-                // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const Color8* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
-                
-                for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
-                {
-                    auto tilePixel = *tileImageP;
-                    
-                    if (tilePixel != 0)
-                        *pixelP = tilePixel;
-                }
-                tileP++;
-            }
-        }
         
     public: // Coords manipulation.
         // Updates the given grid coordinates so they're clamped inside the box (e.g. negative will be zero'd).
@@ -596,5 +356,7 @@ namespace ptui
     };
 }
 
+
+#   include "ptui/CuteTileMap.Rendering.hpp"
 
 #endif // PTUI_PALETTETILEMAP_HPP

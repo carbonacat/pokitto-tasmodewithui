@@ -7,6 +7,6 @@ namespace ptui
 {
     void TerminalTMFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
     {
-        tasUITileMap.renderIntoLineBuffer(line, y, skip);
+        tasUITileMap.renderIntoLineBuffer<true, true, true>(line, y, skip);
     }
 }
