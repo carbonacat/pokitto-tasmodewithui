@@ -13,6 +13,37 @@ namespace ptui
     // - `lineWidthP` define how big is a scanline buffer in pixels.
     // - `enableTilesWithDeltasP`, if true, will provide the Delta API, which allows recoloration of single tiles.
     //   - If false, any call related to Deltas will be ignored.
+    // - `clutSizeP`, if greater than 0, will provide the CLUT API, which allows remapping colors and also defines the size of said table.
+    //   - If 0, any call related to the CLUT will be ignored.
+    //   - The CLUT is initialized to map y=x.
+    //   - Use either 0 or 256 if you're unsure about it.
+    //   - The CLUT isn't looped due to optimizations.
+    //     - Please carefully plan the CLUT and Deltas. The CLUT size should contain the tileset's max color added to the max Delta you're going to use.
+    //     - While it probably won't crash if you overflow the CLUT (e.g. color 0x07 and delta of 0x255), it'll probably display some kind of esoteric colors.
+    //   - Examples of properly planned CLUTs:
+    //     - 8-colors tileset using range 0-7, 4 variants.
+    //       - Variant 1 use 0-7, delta=0.
+    //       - Variant 2 use 8-15, delta=8.
+    //       - Variant 3 use 16-23, delta=16.
+    //       - Variant 4 use 24-31, delta=24.
+    //       - Thus a 32-color CLUT is required.
+    //     - 64-colors tileset using range 0-63, 3 variants.
+    //       - Variant 1 use 0-63, delta = 0
+    //       - Variant 2 use 64-127, delta = 64
+    //       - Variant 3 use 128-191, delta = 128
+    //       - Thus a 192-color CLUT is required.
+    //     - 4-colors tileset using range 0-7, 5 variants.
+    //       - Note that the 4 colors in the tileset aren't in the compact range of 0-3, but instead expand to 0-7. Please properly index your tilesets before!
+    //       - Variant 1 use 0-7, delta = 0
+    //       - Variant 2 use 8-15, delta = 8
+    //       - Variant 3 use 16-23, delta = 16
+    //       - Variant 4 use 24-31, delta = 24
+    //       - Variant 5 use 32-39, delta = 32
+    //       - Thus a 40-color CLUT is required.
+    //     - 3-colors tileset using range 0-2, 2 variants.
+    //       - Variant 1 use 0-2, delta = 0
+    //       - Variant 2 use 3-5, delta = 3
+    //       - Thus a 6-color CLUT is required.
     //
     // Provides the following services:
     // - Set/Get an arbitrary tile. [Tiles Access]
@@ -30,7 +61,7 @@ namespace ptui
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
              unsigned lineWidthP,
-             bool enableTilesWithDeltasP>
+             bool enableTilesWithDeltasP, unsigned clutSizeP>
     class CuteTileMap
     {
         static_assert(lineWidthP > tileWidthP);
@@ -50,6 +81,7 @@ namespace ptui
         static constexpr auto width = columns * tileWidthP;
         static constexpr auto height = rows * tileHeightP;
         static constexpr auto lineWidth = lineWidthP;
+        static constexpr bool clutIsEnabled = clutSizeP > 0;
         
         
     public: // Constructors.
@@ -121,7 +153,9 @@ namespace ptui
         // - Safe - If `column` or `row` are outside the map, nothing will happen.
         void setDelta(int column, int row, Delta delta) noexcept
         {
-            if ((enableTilesWithDeltasP) && (areCoordsValid(column, row)))
+            if (!enableTilesWithDeltasP)
+                return ;
+            if (areCoordsValid(column, row))
                 _tiles[_tileIndex(column, row) + deltaIndexOffset] = delta;
         }
         
@@ -152,7 +186,9 @@ namespace ptui
         // - Safe - If `column` or `row` are outside the map, `outsideDelta` is returned.
         Delta getDelta(int column, int row, Delta outsideDelta = 0) const noexcept
         {
-            if ((enableTilesWithDeltasP) && (areCoordsValid(column, row)))
+            if (!enableTilesWithDeltasP)
+                return outsideDelta;
+            if (areCoordsValid(column, row))
                 return _tiles[_tileIndex(column, row) + deltaIndexOffset];
             return outsideDelta;
         }
@@ -175,8 +211,9 @@ namespace ptui
         // Sets the whole map's deltas to `delta`.
         void clearDeltas(Delta delta) noexcept
         {
-            if (enableTilesWithDeltasP)
-                std::fill(_tiles.begin() + deltaIndexOffset, _tiles.end(), delta);
+            if (!enableTilesWithDeltasP)
+                return ;
+            std::fill(_tiles.begin() + deltaIndexOffset, _tiles.end(), delta);
         }
         
         // Same than above, on a defined area.
@@ -192,9 +229,10 @@ namespace ptui
         // Same than above, but for the tile deltas.
         void fillRectDeltas(int firstColumn, int firstRow, int lastColumn, int lastRow, Delta delta) noexcept
         {
-            if (enableTilesWithDeltasP)
-                fillRectDeltasUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
-                                     delta);
+            if (!enableTilesWithDeltasP)
+                return ;
+            fillRectDeltasUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                                 delta);
         }
         
         // Both fillRectTiles and fillRectDeltas.
@@ -268,12 +306,17 @@ namespace ptui
         // - Using `0` as `newColor` will make the color transparent!
         void mapColor(Color color, Color newColor) noexcept
         {
+            if (color >= clutSizeP)
+                return ;
             _colorLUT[color] = newColor;
         }
         
         // Resets the mapping to a default x => x setting.
         void resetCLUT() noexcept
         {
+            if (!clutIsEnabled)
+                return ;
+                
             Color color = 0;
             
             // Fills the default color lookup table with the same colors.
@@ -295,11 +338,12 @@ namespace ptui
         // `fillRectDeltas`, but columns & rows are considered valid within the grid.
         void fillRectDeltasUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Delta delta) noexcept
         {
-            if (enableTilesWithDeltasP)
-                // TODO: Optimizable with cached indexes calculation.
-                for (int row = firstRow; row <= lastRow; row++)
-                    for (int column = firstColumn; column <= lastColumn; column++)
-                        setDelta(column, row, delta);
+            if (!enableTilesWithDeltasP)
+                return ;
+            // TODO: Optimizable with cached indexes calculation.
+            for (int row = firstRow; row <= lastRow; row++)
+                for (int column = firstColumn; column <= lastColumn; column++)
+                    setDelta(column, row, delta);
         }
         
         // `shift`, but columns & rows are considered valid within the grid.

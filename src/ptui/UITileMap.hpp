@@ -47,20 +47,20 @@ namespace ptui
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
              unsigned lineWidthP,
-             bool tilesWithDeltasP,
+             bool tilesWithDeltasP, unsigned clutSizeP,
              typename TilesetDefinition = UITilesetDefinition>
     class UITileMap:
         public CuteTileMap<columnsP, rowsP,
                            tileWidthP, tileHeightP,
                            lineWidthP,
-                           tilesWithDeltasP>
+                           tilesWithDeltasP, clutSizeP>
     {
     public: // Types.
         TilesetDefinition definition;
         using Delta = typename CuteTileMap<columnsP, rowsP,
                                            tileWidthP, tileHeightP,
                                            lineWidthP,
-                                           tilesWithDeltasP>::Delta;
+                                           tilesWithDeltasP, clutSizeP>::Delta;
         
         
     public: // Widgets.
