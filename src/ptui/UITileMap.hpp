@@ -46,18 +46,18 @@ namespace ptui
     // - Box, checkbox, gauge drawing. [Widgets]
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
-             unsigned lineWidthP,
+             unsigned lineWidthP, bool tilesWithDeltasP,
              typename TilesetDefinition = UITilesetDefinition>
     class UITileMap:
         public CuteTileMap<columnsP, rowsP,
                            tileWidthP, tileHeightP,
-                           lineWidthP>
+                           lineWidthP, tilesWithDeltasP>
     {
     public: // Types.
         TilesetDefinition definition;
         using Delta = typename CuteTileMap<columnsP, rowsP,
                                            tileWidthP, tileHeightP,
-                                           lineWidthP>::Delta;
+                                           lineWidthP, tilesWithDeltasP>::Delta;
         
         
     public: // Widgets.

@@ -31,7 +31,7 @@ namespace ptui
         }
     };
     
-    template<bool transparentZeroColor, bool colorLookUp, bool colorOffset, int deltaIndexOffset>
+    template<bool transparentZeroColor, bool colorLookUp, bool colorDelta, int deltaIndexOffset>
     struct TileLineOutput
     {
         using Color8 = std::uint8_t;
@@ -171,9 +171,9 @@ namespace ptui
     
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
-             unsigned lineWidthP>
+             unsigned lineWidthP, bool tilesWithDeltasP>
     template<bool transparentZeroColor, bool colorLookUp, bool colorOffset>
-    void CuteTileMap<columnsP, rowsP, tileWidthP, tileHeightP, lineWidthP>::renderIntoLineBuffer(BufferPixel* lineBuffer, int y, bool skip) noexcept
+    void CuteTileMap<columnsP, rowsP, tileWidthP, tileHeightP, lineWidthP, tilesWithDeltasP>::renderIntoLineBuffer(BufferPixel* lineBuffer, int y, bool skip) noexcept
     {
         // Row initialization / change.
         
@@ -229,9 +229,10 @@ namespace ptui
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
                 const TilesetPixel* tileImagePEnd = tileImagePStart + tileWidth;
                 
-                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, deltaIndexOffset>::output(tileP, _colorLUT,
-                                                                                                         tileImageP, tileImagePEnd,
-                                                                                                         pixelP);
+                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset && tilesWithDeltasP,
+                               deltaIndexOffset>::output(tileP, _colorLUT,
+                                                         tileImageP, tileImagePEnd,
+                                                         pixelP);
             }
             tileP++;
         }
@@ -247,9 +248,10 @@ namespace ptui
                 // Points to the current pixel in the tile.
                 const TilesetPixel* tileImageP = tileImageRowBase + *tileP * tileSize;
                 
-                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, deltaIndexOffset>:: template outputFixed<tileWidth>(tileP, _colorLUT,
-                                                                                                                                   tileImageP,
-                                                                                                                                   pixelP);
+                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset && tilesWithDeltasP,
+                               deltaIndexOffset>:: template outputFixed<tileWidth>(tileP, _colorLUT,
+                                                                                   tileImageP,
+                                                                                   pixelP);
             }
             else
                 pixelP += tileWidth;
@@ -267,9 +269,10 @@ namespace ptui
             // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
             const TilesetPixel* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
             
-            TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, deltaIndexOffset>::output(tileP, _colorLUT,
-                                                                                                     tileImageP, tileImagePEnd,
-                                                                                                     pixelP);
+            TileLineOutput<transparentZeroColor, colorLookUp, colorOffset && tilesWithDeltasP,
+                           deltaIndexOffset>::output(tileP, _colorLUT,
+                                                     tileImageP, tileImagePEnd,
+                                                     pixelP);
             tileP++;
         }
     }

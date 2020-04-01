@@ -19,7 +19,7 @@ namespace ptui
     constexpr unsigned ttmColumns = ttmFullDisplayColumns;
     constexpr unsigned ttmRows = ttmFullDisplayRows;
     
-    using TASUITileMap = UITileMap<ttmColumns, ttmRows, ttmTileWidth, ttmTileHeight, lcdWidth>;
+    using TASUITileMap = UITileMap<ttmColumns, ttmRows, ttmTileWidth, ttmTileHeight, lcdWidth, true>;
     
     extern TASUITileMap tasUITileMap;
 }

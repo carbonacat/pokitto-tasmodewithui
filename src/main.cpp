@@ -8,9 +8,9 @@
 #include "ptui/TASTerminalTileMap.hpp"
 
 int transition = 0;
-bool renderTransparency = false;
-bool renderCLUT = false;
-bool renderColorOffset = false;
+bool renderTransparency = true;
+bool renderCLUT = true;
+bool renderColorOffset = true;
 
 void GameFiller(std::uint8_t* line, std::uint32_t y, bool skip) noexcept
 {
@@ -459,7 +459,7 @@ int intermission(const char* nextScene)
     
     // Configuration.
     ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
-    ptui::tasUITileMap.clear(32);
+    ptui::tasUITileMap.clear(32, 8);
     ptui::tasUITileMap.setOffset(0, 0);
     resetUIColors();
     
@@ -467,7 +467,6 @@ int intermission(const char* nextScene)
     PD::lineFillers[1] = TAS::NOPFiller;
     
     // Drawing the UI.
-    ptui::tasUITileMap.clear(0, 8);
     ptui::tasUITileMap.setCursorDelta(0);
     while (PC::isRunning() && PB::cBtn())
     {
@@ -522,7 +521,7 @@ int main() noexcept
     
     PC::begin();
     PD::loadRGBPalette(miloslav);
-    PD::lineFillers[2] = availableLineFillers[0];
+    PD::lineFillers[2] = availableLineFillers[7];
     
     while (PC::isRunning())
     {

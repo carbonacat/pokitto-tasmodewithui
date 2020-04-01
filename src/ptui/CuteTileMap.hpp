@@ -8,6 +8,12 @@ namespace ptui
 {
     // Color lookUp, Transparency and color-offsEt TileMap.
     // A 8BPP TileMap implementation with optional color lookup, optional transparency and optional per-tile color-offset.
+    // - `columnsP` and `rowsP` define how large is the tilemap in tiles.
+    // - `tileWidthP` and `tileHeightP` define how large a single tile is in pixels.
+    // - `lineWidthP` define how big is a scanline buffer in pixels.
+    // - `tilesWithDeltasP`, if true, will provide the Delta API, which allows recoloration of single tiles.
+    //   - If false, any call related to Deltas will be ignored.
+    //
     // Provides the following services:
     // - Set/Get an arbitrary tile. [Tiles Access]
     // - Set/Get the Color Delta for an arbirtrary tile. [Tiles Access]
@@ -18,13 +24,13 @@ namespace ptui
     // - Change the Color Lookup Table. [CLUT]
     // - Render a scanline using the provided Tileset and offset. [Rendering]
     //
-    //
     // - column and row are used for the grid coordinates' names.
     // - x and y are used as the pixel/display coordinates' name.
     // For a more interesting implementation, see UITileMap.
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
-             unsigned lineWidthP>
+             unsigned lineWidthP,
+             bool tilesWithDeltasP>
     class CuteTileMap
     {
         static_assert(lineWidthP > tileWidthP);
@@ -115,7 +121,7 @@ namespace ptui
         // - Safe - If `column` or `row` are outside the map, nothing will happen.
         void setDelta(int column, int row, Delta delta) noexcept
         {
-            if (areCoordsValid(column, row))
+            if ((tilesWithDeltasP) && (areCoordsValid(column, row)))
                 _tiles[_tileIndex(column, row) + deltaIndexOffset] = delta;
         }
         
@@ -128,7 +134,8 @@ namespace ptui
                 auto tileIndex = _tileIndex(column, row);
                 
                 _tiles[tileIndex] = tile;
-                _tiles[tileIndex + deltaIndexOffset] = delta;
+                if (tilesWithDeltasP)
+                    _tiles[tileIndex + deltaIndexOffset] = delta;
             }
         }
         
@@ -145,7 +152,7 @@ namespace ptui
         // - Safe - If `column` or `row` are outside the map, `outsideDelta` is returned.
         Delta getDelta(int column, int row, Delta outsideDelta = 0) const noexcept
         {
-            if (areCoordsValid(column, row))
+            if ((tilesWithDeltasP) && (areCoordsValid(column, row)))
                 return _tiles[_tileIndex(column, row) + deltaIndexOffset];
             return outsideDelta;
         }
@@ -163,12 +170,13 @@ namespace ptui
         // Sets the whole map with `tile`.
         void clearTiles(Tile tile) noexcept
         {
-            std::fill(_tiles.begin(), _tiles.begin() + deltaIndexOffset, tile);
+            std::fill(_tiles.begin(), _tiles.begin() + tilesSize, tile);
         }
         // Sets the whole map's deltas to `delta`.
         void clearDeltas(Delta delta) noexcept
         {
-            std::fill(_tiles.begin() + deltaIndexOffset, _tiles.end(), delta);
+            if (tilesWithDeltasP)
+                std::fill(_tiles.begin() + deltaIndexOffset, _tiles.end(), delta);
         }
         
         // Same than above, on a defined area.
@@ -184,8 +192,9 @@ namespace ptui
         // Same than above, but for the tile deltas.
         void fillRectDeltas(int firstColumn, int firstRow, int lastColumn, int lastRow, Delta delta) noexcept
         {
-            fillRectDeltasUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
-                                 delta);
+            if (tilesWithDeltasP)
+                fillRectDeltasUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                                     delta);
         }
         
         // Both fillRectTiles and fillRectDeltas.
@@ -286,10 +295,11 @@ namespace ptui
         // `fillRectDeltas`, but columns & rows are considered valid within the grid.
         void fillRectDeltasUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Delta delta) noexcept
         {
-            // TODO: Optimizable with cached indexes calculation.
-            for (int row = firstRow; row <= lastRow; row++)
-                for (int column = firstColumn; column <= lastColumn; column++)
-                    setDelta(column, row, delta);
+            if (tilesWithDeltasP)
+                // TODO: Optimizable with cached indexes calculation.
+                for (int row = firstRow; row <= lastRow; row++)
+                    for (int column = firstColumn; column <= lastColumn; column++)
+                        setDelta(column, row, delta);
         }
         
         // `shift`, but columns & rows are considered valid within the grid.
@@ -340,16 +350,19 @@ namespace ptui
                     auto destIndex = _tileIndex(column, row);
                     
                     _tiles[destIndex] = _tiles[sourceIndex];
-                    _tiles[destIndex + deltaIndexOffset] = _tiles[sourceIndex + deltaIndexOffset];
+                    if (tilesWithDeltasP)
+                        _tiles[destIndex + deltaIndexOffset] = _tiles[sourceIndex + deltaIndexOffset];
                 }
             }
         }
     
     private:
         // All the tiles, optionally with their Delta.
-        using Tiles = std::array<Tile, columns * rows * 2>;
+        static constexpr auto tilesSize = columns * rows;
+        static constexpr auto deltasSize = tilesWithDeltasP ? (columns * rows) : 0;
+        using Tiles = std::array<Tile, tilesSize + deltasSize>;
         
-        static constexpr auto deltaIndexOffset = columns * rows;
+        static constexpr auto deltaIndexOffset = tilesSize;
     
         static constexpr auto _tileIndex(short tileX, short tileY) noexcept
         {
