@@ -46,18 +46,21 @@ namespace ptui
     // - Box, checkbox, gauge drawing. [Widgets]
     template<unsigned columnsP, unsigned rowsP,
              unsigned tileWidthP, unsigned tileHeightP,
-             unsigned lineWidthP, bool tilesWithDeltasP,
+             unsigned lineWidthP,
+             bool tilesWithDeltasP,
              typename TilesetDefinition = UITilesetDefinition>
     class UITileMap:
         public CuteTileMap<columnsP, rowsP,
                            tileWidthP, tileHeightP,
-                           lineWidthP, tilesWithDeltasP>
+                           lineWidthP,
+                           tilesWithDeltasP>
     {
     public: // Types.
         TilesetDefinition definition;
         using Delta = typename CuteTileMap<columnsP, rowsP,
                                            tileWidthP, tileHeightP,
-                                           lineWidthP, tilesWithDeltasP>::Delta;
+                                           lineWidthP,
+                                           tilesWithDeltasP>::Delta;
         
         
     public: // Widgets.
@@ -168,7 +171,8 @@ namespace ptui
         // This usually change the color, depending on the main palette and the CLUT (if enabled).
         void setCursorDelta(Delta delta) noexcept
         {
-            _cursorDelta = delta;
+            if (tilesWithDeltasP)
+                _cursorDelta = delta;
         }
         
         // Changes the cursor's bounding box.
@@ -212,7 +216,7 @@ namespace ptui
                     // Autoscroll.
                     this->shift(_cursorFirstColumn, _cursorFirstRow, _cursorLastColumn, _cursorLastRow,
                           0, -1);
-                    this->fillRectTilesAndDeltas(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle, _cursorDelta);
+                    this->fillRectTilesAndDeltas(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle, tilesWithDeltasP ? _cursorDelta : 0);
                     _cursorRow = _cursorLastRow;
                 }
             }
@@ -234,7 +238,7 @@ namespace ptui
                     if (c == ' ')
                         return ;
                 }
-                this->setTileAndDelta(_cursorColumn, _cursorRow, c - ' ' + TilesetDefinition::asciiSpace, _cursorDelta);
+                this->setTileAndDelta(_cursorColumn, _cursorRow, c - ' ' + TilesetDefinition::asciiSpace, tilesWithDeltasP ? _cursorDelta : 0);
                 _cursorColumn++;
             }
         }
@@ -313,12 +317,18 @@ namespace ptui
         
         
     private:
+        // Cursor position.
         short _cursorColumn = 0;
         short _cursorRow = 0;
+        
+        // Cursor bounding box.
         short _cursorFirstColumn = 0;
         short _cursorFirstRow = 0;
         short _cursorLastColumn = this->columns - 1;
         short _cursorLastRow = this->rows - 1;
+        
+        // TODO: There might be a way to remove this field when `tilesWithDeltasP` is `false`, but I'm not sure how.
+        // Cursor "color".
         Delta _cursorDelta = 0;
     };
 }
