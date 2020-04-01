@@ -426,6 +426,76 @@ int testPerfsStairs()
     return 0;
 }
 
+const char* words[46] =
+{
+    "a", "ka", "sa", "ta", "na", "ha", "ma", "ya", "ra", "wa",
+    "i", "ki", "shi","chi","ni", "hi", "mi",       "ri", 
+    "u", "ku", "su", "tsu","nu", "fu", "mu", "yu", "ru",
+    "e", "ke", "se", "te", "ne", "he", "me",       "re",
+    "o", "ko", "so", "to", "no", "ho", "mo", "yo", "ro", "wo",
+    "n"
+};
+const char* poncts[5] =
+{
+    ", ", "; ", "! ", ". ", "- "
+};
+
+int testRandomWords()
+{
+    using PC=Pokitto::Core;
+    using PD=Pokitto::Display;
+    using PB=Pokitto::Buttons;
+    
+    int ticks = 0;
+    
+    // Configuration.
+    ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
+    ptui::tasUITileMap.clear(32, 0);
+    ptui::tasUITileMap.setOffset(0, 0);
+    ptui::tasUITileMap.setCursorDelta(0);
+    ptui::tasUITileMap.setCursor(2, 2);
+    ptui::tasUITileMap.drawBox(1, 1, 35, 28);
+    ptui::tasUITileMap.setCursorBoundingBox(2, 2, 34, 27);
+    
+    PD::lineFillers[0] = TAS::NOPFiller;
+    PD::lineFillers[1] = TAS::NOPFiller;
+    
+    // Drawing the UI.
+    while (PC::isRunning() && !PB::cBtn())
+    {
+        if (!PC::update()) 
+            continue;
+        
+        if (PB::aBtn())
+        {
+            auto offsetX = ptui::tasUITileMap.offsetX();
+            auto offsetY = ptui::tasUITileMap.offsetY();
+    
+            if (PB::leftBtn()) offsetX--;
+            if (PB::rightBtn()) offsetX++;
+            if (PB::downBtn()) offsetY++;
+            if (PB::upBtn()) offsetY--;
+            ptui::tasUITileMap.setOffset(offsetX, offsetY);
+        }
+        
+        ticks++;
+        if (ticks % 2 == 0)
+        {
+            ptui::tasUITileMap.setCursorDelta((rand() % 8) * 8);
+            for (auto syllables = 1 + rand() % 8; syllables > 0; syllables--)
+                ptui::tasUITileMap.printText(words[rand() % 46]);
+            ptui::tasUITileMap.printString(poncts[rand() % 5]);
+        }
+        if (ticks == 60)
+        {
+            printf("fps=%d\n", PC::fps_counter);
+            ticks = 0;
+        }
+    }
+    
+    return 0;
+}
+
 void resetUIColors() noexcept
 {
     // Configuring UI's Colors.
@@ -536,6 +606,9 @@ int main() noexcept
         
         intermission("Battle Mockup");
         battleMockup();
+        
+        intermission("Random Words");
+        testRandomWords();
     }
     return 0;
 }
