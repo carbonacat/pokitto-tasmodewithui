@@ -92,6 +92,7 @@ int battleMockup()
     // Configuration.
     ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
     ptui::tasUITileMap.setOffset(-1, -4);
+    ptui::tasUITileMap.setCursorDelta(0);
     ptui::tasUITileMap.clear();
     
     PD::lineFillers[0] = TAS::BGTileFiller;
@@ -153,50 +154,64 @@ int battleMockup()
         
         if ((ticks >= 60) && (ticks <= 120))
         {
+            bool attackIsSelected = (ticks < 70) || (ticks >= 80);
+            bool magickIsSelected = !attackIsSelected;
+            bool itemsIsSelected = false;
+                
             ptui::tasUITileMap.drawBox(2, 20, 10, 28);
             
-            ptui::tasUITileMap.setCursor(4, 21);
+            ptui::tasUITileMap.setCursor(3, 21);
+            ptui::tasUITileMap.setCursorDelta(attackIsSelected ? 8 : 0);
+            ptui::tasUITileMap.printChar(attackIsSelected ? '>' : ' ');
             ptui::tasUITileMap.printString("Attack");
             
-            ptui::tasUITileMap.setCursor(4, 22);
+            ptui::tasUITileMap.setCursor(3, 22);
+            ptui::tasUITileMap.setCursorDelta(magickIsSelected ? 8 : 0);
+            ptui::tasUITileMap.printChar(magickIsSelected ? '>' : ' ');
             ptui::tasUITileMap.printString("Magick");
             
-            ptui::tasUITileMap.setCursor(4, 23);
+            ptui::tasUITileMap.setCursor(3, 23);
+            ptui::tasUITileMap.setCursorDelta(itemsIsSelected ? 8 : 0);
+            ptui::tasUITileMap.printChar(itemsIsSelected ? '>' : ' ');
             ptui::tasUITileMap.printString("Items");
             if (ticks < 70)
             {
-                ptui::tasUITileMap.setTile(3, 21, '>');
+                ptui::tasUITileMap.setTileAndDelta(3, 21, '>', 8);
             }
             else if (ticks < 80)
             {
-                ptui::tasUITileMap.setTile(3, 21, ' ');
-                ptui::tasUITileMap.setTile(3, 22, '>');
+                ptui::tasUITileMap.setTileAndDelta(3, 21, ' ', 0);
+                ptui::tasUITileMap.setTileAndDelta(3, 22, '>', 8);
             }
             else if (ticks < 90)
             {
-                ptui::tasUITileMap.setTile(3, 21, '>');
-                ptui::tasUITileMap.setTile(3, 22, ' ');
+                ptui::tasUITileMap.setTileAndDelta(3, 21, '>', 8);
+                ptui::tasUITileMap.setTileAndDelta(3, 22, ' ', 0);
             }
-            else if (ticks > 90)
+            else
             {
+                bool ratIsSelected = (ticks < 105);
+                bool slimeIsSelected = !ratIsSelected;
+                
+                ptui::tasUITileMap.fillRectDeltas(9, 20, 16, 23, 0);
                 ptui::tasUITileMap.drawBox(9, 20, 16, 23);
-                ptui::tasUITileMap.setCursor(11, 21);
+                
+                ptui::tasUITileMap.setCursorDelta(ratIsSelected ? 8 : 0);
+                ptui::tasUITileMap.setCursor(10, 21);
+                ptui::tasUITileMap.printChar(ratIsSelected ? '>' : ' ');
                 ptui::tasUITileMap.printString("Rat");
-                ptui::tasUITileMap.setCursor(11, 22);
+                
+                ptui::tasUITileMap.setCursorDelta(slimeIsSelected ? 8 : 0);
+                ptui::tasUITileMap.setCursor(10, 22);
+                ptui::tasUITileMap.printChar(slimeIsSelected ? '>' : ' ');
                 ptui::tasUITileMap.printString("Slime");
                 
-                if (ticks > 105)
-                {
-                    ptui::tasUITileMap.setTile(10, 21, ' ');
-                    ptui::tasUITileMap.setTile(10, 22, '>');
-                }
-                else
-                    ptui::tasUITileMap.setTile(10, 21, '>');
+                ptui::tasUITileMap.setCursorDelta(0);
             }
         }
         else
         {
-            ptui::tasUITileMap.fillRectTiles(2, 20, 20, 20, 0);
+            ptui::tasUITileMap.fillRectTilesAndDeltas(-1, 20, 37, 30, 0, 0);
             
             ptui::tasUITileMap.drawBox(-1, 21, 37, 30);
             
@@ -249,9 +264,10 @@ int battleMockup()
             ptui::tasUITileMap.setCursorBoundingBox(3, 3, 34, 5);
             ptui::tasUITileMap.setCursor(3, 3);
             
-            //ptui::tasUITileMap.printString("Life... dreams... hope...\n    \n\nWhere do they come from?\nAnd where do they go?\n     \n\nSuch meaningless things...\nI'll destroy them all!    ", (ticks - 16) / 2);
-            ptui::tasUITileMap.printText("Interesting,Interesting Interesting\tInteresting, Interesting-Interesting, Interesting InterestingInteresting, Interesting, InterestingInterestingInteresting", (ticks - 16) / 2);
-            
+            ptui::tasUITileMap.setCursorDelta(16);
+            ptui::tasUITileMap.printString("Life... dreams... hope...\n    \n\nWhere do they come from?\nAnd where do they go?\n     \n\nSuch meaningless things...\nI'll destroy them all!    ", (ticks - 16) / 2);
+            ptui::tasUITileMap.setCursorDelta(0);
+
             ptui::tasUITileMap.resetCursorBoundingBox();
         }
         else
@@ -262,8 +278,10 @@ int battleMockup()
             ptui::tasUITileMap.fillRectDeltas(1, 8, 35, 9, (ticks / 16 % 2) ? 40 : 0);
             ptui::tasUITileMap.setCursorBoundingBox(1, 9, 35, 9);
             ptui::tasUITileMap.setCursor(1, 9);
+            ptui::tasUITileMap.setCursorDelta((ticks / 16 % 2) ? 40 : 0);
             ptui::tasUITileMap.printText("This is an interesting text!");
             ptui::tasUITileMap.resetCursorBoundingBox();
+            ptui::tasUITileMap.setCursorDelta(0);
         }
         
         PD::drawSprite(110 - mareveOriginX, 88 - mareveOriginY, Mareve);
@@ -292,6 +310,7 @@ int testPerfsFull(bool cropped)
     ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
     ptui::tasUITileMap.clear(32);
     ptui::tasUITileMap.setOffset(-1, cropped ? 135: 0);
+    ptui::tasUITileMap.setCursorDelta(0);
     
     ptui::tasUITileMap.drawBox(1, 1, 35, 28);
     ptui::tasUITileMap.setCursor(2, 2);
@@ -364,6 +383,7 @@ int testPerfsStairs()
     ptui::tasUITileMap.setTilesetImage(TerminalTileSet);
     ptui::tasUITileMap.clear();
     ptui::tasUITileMap.setOffset(0, 0);
+    ptui::tasUITileMap.setCursorDelta(0);
     
     PD::lineFillers[0] = TAS::NOPFiller;
     PD::lineFillers[1] = TAS::NOPFiller;
@@ -448,6 +468,7 @@ int intermission(const char* nextScene)
     
     // Drawing the UI.
     ptui::tasUITileMap.clear(0, 8);
+    ptui::tasUITileMap.setCursorDelta(0);
     while (PC::isRunning() && PB::cBtn())
     {
         if (!PC::update()) 
