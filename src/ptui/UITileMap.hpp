@@ -55,6 +55,9 @@ namespace ptui
     {
     public: // Types.
         TilesetDefinition definition;
+        using Delta = typename CuteTileMap<columnsP, rowsP,
+                                           tileWidthP, tileHeightP,
+                                           lineWidthP>::Delta;
         
         
     public: // Widgets.
@@ -63,6 +66,7 @@ namespace ptui
         // - If `current` is `max`, the gauge will be full.
         // - If the gauge is reversed or if `max` is negative, nothing happens.
         // - The drawing will be clipped as needed.
+        // - Doesn't change the delta.
         void drawGauge(int firstColumn, int lastColumn, int row,
                        int current, int max) noexcept
         {
@@ -79,12 +83,12 @@ namespace ptui
             {
                 // It's an edge case. We'll use the Middle part.
                 if (gaugeMiddleCapacity == 0)
-                    this->set(firstColumn, row, TilesetDefinition::gaugeMiddleFull); // No distinction between empty or full = no value.
+                    this->setTile(firstColumn, row, TilesetDefinition::gaugeMiddleFull); // No distinction between empty or full = no value.
                 else
                 {
                     int filling = (current * gaugeMiddleCapacity + max / 2) / max;
                     
-                    this->set(firstColumn, row, TilesetDefinition::gaugeMiddleEmpty + filling);
+                    this->setTile(firstColumn, row, TilesetDefinition::gaugeMiddleEmpty + filling);
                 }
             }
             else if (firstColumn < lastColumn)
@@ -95,25 +99,26 @@ namespace ptui
                 int filling = (current * gaugeCapacity + max / 2) / max;
                 
                 // Left part.
-                this->set(firstColumn, row, TilesetDefinition::gaugeLeftEmpty + std::min(filling, gaugeLeftCapacity));
+                this->setTile(firstColumn, row, TilesetDefinition::gaugeLeftEmpty + std::min(filling, gaugeLeftCapacity));
                 filling -= gaugeLeftCapacity;
                 
                 // Middle parts.
                 for (int middleColumn = firstColumn + 1; middleColumn < lastColumn; middleColumn++)
                 {
-                    this->set(middleColumn, row, TilesetDefinition::gaugeMiddleEmpty + std::max(0, std::min(filling, gaugeMiddleCapacity)));
+                    this->setTile(middleColumn, row, TilesetDefinition::gaugeMiddleEmpty + std::max(0, std::min(filling, gaugeMiddleCapacity)));
                     filling -= gaugeMiddleCapacity;
                 }
                 
                 // Right parts.
-                this->set(lastColumn, row, TilesetDefinition::gaugeRightEmpty + std::max(0, std::min(filling, gaugeRightCapacity)));
+                this->setTile(lastColumn, row, TilesetDefinition::gaugeRightEmpty + std::max(0, std::min(filling, gaugeRightCapacity)));
             }
         }
         
         // Draws a checkbox at `column`, `row` with the given checked state.
+        // - Doesn't change the delta.
         void drawCheckbox(int column, int row, bool checked) noexcept
         {
-            this->set(column, row, checked ? TilesetDefinition::checkboxChecked : TilesetDefinition::checkboxUnchecked);
+            this->setTile(column, row, checked ? TilesetDefinition::checkboxChecked : TilesetDefinition::checkboxUnchecked);
         }
         
         // Draws a Box.
@@ -121,31 +126,32 @@ namespace ptui
         // - `lastColumn` and `lastRow` are included.
         // - Empty or negative boxes won't be drawn.
         // - Due to the limitation of tileset, 1-column and 1-row boxes will be rendered as Spaces.
+        // - Doesn't change the delta.
         void drawBox(int firstColumn, int firstRow, int lastColumn, int lastRow) noexcept
         {
             if ((firstColumn > lastColumn) || (firstRow > firstRow))
                 return ;
             if ((firstColumn == lastColumn) || (firstRow == lastRow))
             {
-                this->fillRect(firstColumn, firstRow, lastColumn, lastRow, TilesetDefinition::boxMiddle);
+                this->fillRectTiles(firstColumn, firstRow, lastColumn, lastRow, TilesetDefinition::boxMiddle);
                 return ;
             }
             
             // Corners.
-            this->set(firstColumn, firstRow, TilesetDefinition::boxTopLeft);
-            this->set(firstColumn, lastRow, TilesetDefinition::boxBottomLeft);
-            this->set(lastColumn, firstRow, TilesetDefinition::boxTopRight);
-            this->set(lastColumn, lastRow, TilesetDefinition::boxBottomRight);
+            this->setTile(firstColumn, firstRow, TilesetDefinition::boxTopLeft);
+            this->setTile(firstColumn, lastRow, TilesetDefinition::boxBottomLeft);
+            this->setTile(lastColumn, firstRow, TilesetDefinition::boxTopRight);
+            this->setTile(lastColumn, lastRow, TilesetDefinition::boxBottomRight);
             
             // Borders.
-            this->fillRect(firstColumn + 1, firstRow, lastColumn - 1, firstRow, TilesetDefinition::boxTop);
-            this->fillRect(firstColumn + 1, lastRow, lastColumn - 1, lastRow, TilesetDefinition::boxBottom);
+            this->fillRectTiles(firstColumn + 1, firstRow, lastColumn - 1, firstRow, TilesetDefinition::boxTop);
+            this->fillRectTiles(firstColumn + 1, lastRow, lastColumn - 1, lastRow, TilesetDefinition::boxBottom);
             
-            this->fillRect(firstColumn, firstRow + 1, firstColumn, lastRow - 1, TilesetDefinition::boxLeft);
-            this->fillRect(lastColumn, firstRow + 1, lastColumn, lastRow - 1, TilesetDefinition::boxRight);
+            this->fillRectTiles(firstColumn, firstRow + 1, firstColumn, lastRow - 1, TilesetDefinition::boxLeft);
+            this->fillRectTiles(lastColumn, firstRow + 1, lastColumn, lastRow - 1, TilesetDefinition::boxRight);
             
             // Inside.
-            this->fillRect(firstColumn + 1, firstRow + 1, lastColumn - 1, lastRow - 1, TilesetDefinition::boxMiddle);
+            this->fillRectTiles(firstColumn + 1, firstRow + 1, lastColumn - 1, lastRow - 1, TilesetDefinition::boxMiddle);
         }
         
         
@@ -156,6 +162,13 @@ namespace ptui
         {
             _cursorColumn = std::max<int>(_cursorFirstColumn, std::min<int>(cursorColumn, _cursorLastColumn));
             _cursorRow = std::max<int>(_cursorFirstRow, std::min<int>(cursorRow, _cursorLastRow));
+        }
+        
+        // Sets the delta to apply for each printed tile after this call.
+        // This usually change the color, depending on the main palette and the CLUT (if enabled).
+        void setCursorDelta(Delta delta) noexcept
+        {
+            _cursorDelta = delta;
         }
         
         // Changes the cursor's bounding box.
@@ -199,7 +212,7 @@ namespace ptui
                     // Autoscroll.
                     this->shift(_cursorFirstColumn, _cursorFirstRow, _cursorLastColumn, _cursorLastRow,
                           0, -1);
-                    this->fillRect(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle);
+                    this->fillRectTilesAndDeltas(_cursorFirstColumn, _cursorLastRow, _cursorLastColumn, _cursorLastRow, TilesetDefinition::boxMiddle, _cursorDelta);
                     _cursorRow = _cursorLastRow;
                 }
             }
@@ -221,7 +234,7 @@ namespace ptui
                     if (c == ' ')
                         return ;
                 }
-                this->set(_cursorColumn, _cursorRow, c - ' ' + TilesetDefinition::asciiSpace);
+                this->setTileAndDelta(_cursorColumn, _cursorRow, c - ' ' + TilesetDefinition::asciiSpace, _cursorDelta);
                 _cursorColumn++;
             }
         }
@@ -306,6 +319,7 @@ namespace ptui
         short _cursorFirstRow = 0;
         short _cursorLastColumn = this->columns - 1;
         short _cursorLastRow = this->rows - 1;
+        Delta _cursorDelta = 0;
     };
 }
 

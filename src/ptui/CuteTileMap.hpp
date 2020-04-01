@@ -10,6 +10,7 @@ namespace ptui
     // A 8BPP TileMap implementation with optional color lookup, optional transparency and optional per-tile color-offset.
     // Provides the following services:
     // - Set/Get an arbitrary tile. [Tiles Access]
+    // - Set/Get the Color Delta for an arbirtrary tile. [Tiles Access]
     // - Clear. [Mass Tiles Access]
     // - Shift. [Mass Tiles Access]
     // - Change the Tileset. [Configurations]
@@ -30,8 +31,10 @@ namespace ptui
         
     public: // Types & Constants.
         using Tile = std::uint8_t;
-        using ColorOffset = std::uint8_t;
-        using Color8 = std::uint8_t;
+        using Delta = std::uint8_t;
+        using Color = std::uint8_t;
+        using TilesetPixel = std::uint8_t;
+        using BufferPixel = std::uint8_t;
         
         static constexpr auto columns = columnsP;
         static constexpr auto rows = rowsP;
@@ -93,7 +96,7 @@ namespace ptui
         
         // Must be called before use!
         // - `tilesetImage` is a vertical-layout 8BPP tileset where each tile is `tileWidth` * `tileHeight` pixels. No size header.
-        void setTilesetImage(const Color8* tilesetImage) noexcept
+        void setTilesetImage(const TilesetPixel* tilesetImage) noexcept
         {
             _tilesetImage = tilesetImage;
         }
@@ -101,89 +104,106 @@ namespace ptui
         
     public: // Tiles Access.
         // Changes a given tile in this map.
-        // - Safe - If column or row are outside the map, nothing will happen.
-        void set(int column, int row, Tile tile) noexcept
+        // - Safe - If `column` or `row` are outside the map, nothing will happen.
+        void setTile(int column, int row, Tile tile) noexcept
         {
             if (areCoordsValid(column, row))
                 _tiles[_tileIndex(column, row)] = tile;
         }
-        // Same than above, but allows changing the color offset at the same time.
-        void set(int column, int row, Tile tile, ColorOffset tileColorOffset) noexcept
+        
+        // Changes the targeted tile's delta.
+        // - Safe - If `column` or `row` are outside the map, nothing will happen.
+        void setDelta(int column, int row, Delta delta) noexcept
+        {
+            if (areCoordsValid(column, row))
+                _tiles[_tileIndex(column, row) + deltaIndexOffset] = delta;
+        }
+        
+        // Changes the targeted tile and its delta.
+        // - Safe - If `column` or `row` are outside the map, nothing will happen.
+        void setTileAndDelta(int column, int row, Tile tile, Delta delta) noexcept
         {
             if (areCoordsValid(column, row))
             {
                 auto tileIndex = _tileIndex(column, row);
                 
                 _tiles[tileIndex] = tile;
-                _tiles[tileIndex + colorOffsetIndexOffset] = tileColorOffset;
+                _tiles[tileIndex + deltaIndexOffset] = delta;
             }
         }
         
-        // Only changes the color offset of the target tile.
-        // - Safe - If column or row are outside the map, nothing will happen.
-        void setColorOffset(int column, int row, ColorOffset tileColorOffset) noexcept
-        {
-            if (areCoordsValid(column, row))
-                _tiles[_tileIndex(column, row) + colorOffsetIndexOffset] = tileColorOffset;
-        }
-        
         // Returns a given tile in this map.
-        // - Safe - If column or row are outside the map, `outsideTile` is returned.
-        Tile get(int column, int row, Tile outsideTile = 0) const noexcept
+        // - Safe - If `column` or `row` are outside the map, `outsideTile` is returned.
+        Tile getTile(int column, int row, Tile outsideTile = 0) const noexcept
         {
             if (areCoordsValid(column, row))
                 return _tiles[_tileIndex(column, row)];
             return outsideTile;
         }
-        // Returns the Color Offset for a given Tile.
-        // - Safe - If column or row are outside the map, `outsideColorOffset` is returned.
-        ColorOffset getColorOffset(int column, int row, ColorOffset outsideColorOffset = 0) const noexcept
+        
+        // Returns the Delta for a given Tile.
+        // - Safe - If `column` or `row` are outside the map, `outsideDelta` is returned.
+        Delta getDelta(int column, int row, Delta outsideDelta = 0) const noexcept
         {
             if (areCoordsValid(column, row))
-                return _tiles[_tileIndex(column, row)];
-            return outsideColorOffset;
+                return _tiles[_tileIndex(column, row) + deltaIndexOffset];
+            return outsideDelta;
         }
         
     
     public: // Mass Tiles Access.
     
-        // Clears out the whole tilemap and associated color offsets.
-        void clear(Tile tile = 0, ColorOffset colorOffset = 0) noexcept
+        // Clears out the whole tilemap, tiles and deltas, .
+        void clear(Tile tile = 0, Delta delta = 0) noexcept
         {
-            fill(tile);
-            fillColorOffset(colorOffset);
+            clearTiles(tile);
+            clearDeltas(delta);
         }
     
-        // Sets the whole map to the given Tile.
-        void fill(Tile tile) noexcept
+        // Sets the whole map with `tile`.
+        void clearTiles(Tile tile) noexcept
         {
-            std::fill(_tiles.begin(), _tiles.begin() + colorOffsetIndexOffset, tile);
+            std::fill(_tiles.begin(), _tiles.begin() + deltaIndexOffset, tile);
         }
-        // Sets the whole map to the given Tile.
-        void fillColorOffset(ColorOffset colorOffset) noexcept
+        // Sets the whole map's deltas to `delta`.
+        void clearDeltas(Delta delta) noexcept
         {
-            std::fill(_tiles.begin() + colorOffsetIndexOffset, _tiles.end(), colorOffset);
+            std::fill(_tiles.begin() + deltaIndexOffset, _tiles.end(), delta);
         }
         
         // Same than above, on a defined area.
         // - `firstColumn`, `firstRow`, `lastColumn` and `lastRow` will be clamped.
         // - `lastColumn` and `lastRow` are included.
         // - Negative and reversed boxes are considered as empty ones.
-        void fillRect(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile = 0) noexcept
+        void fillRectTiles(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile) noexcept
         {
-            fillRectUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
-                           tile);
+            fillRectTilesUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                                tile);
         }
         
-        // Same than above, but for the palette offset.
-        void fillRectColorOffset(int firstColumn, int firstRow, int lastColumn, int lastRow, ColorOffset colorOffset = 0) noexcept
+        // Same than above, but for the tile deltas.
+        void fillRectDeltas(int firstColumn, int firstRow, int lastColumn, int lastRow, Delta delta) noexcept
         {
-            fillRectColorOffsetUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
-                                      colorOffset);
+            fillRectDeltasUnsafe(clampColumn(firstColumn), clampRow(firstRow), clampColumn(lastColumn), clampRow(lastRow),
+                                 delta);
+        }
+        
+        // Both fillRectTiles and fillRectDeltas.
+        void fillRectTilesAndDeltas(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile, Delta delta) noexcept
+        {
+            firstColumn = clampColumn(firstColumn);
+            firstRow = clampRow(firstRow);
+            lastColumn = clampColumn(lastColumn);
+            lastRow = clampRow(lastRow);
+            fillRectTilesUnsafe(firstColumn, firstRow, lastColumn, lastRow,
+                                tile);
+            fillRectDeltasUnsafe(firstColumn, firstRow, lastColumn, lastRow,
+                                 delta);
         }
         
         // Shift the whole map by `shiftedColumns` columns and `shiftedRows` rows.
         // - "Introduced" Tiles will be *left as is*.
+        // - If Deltas are supported, they're shifted as well.
         void shift(int shiftedColumns, int shiftedRows) noexcept
         {
             shiftUnsafe(0, 0, columns - 1, rows - 1,
@@ -211,7 +231,7 @@ namespace ptui
         //   - Happens before the Color LookUp step if any.
         //   - Will produce a compilation error if this instance doesn't support Tile Color Offset.
         template<bool transparentZeroColor, bool colorLookUp, bool colorOffset>
-        void renderIntoLineBuffer(Color8* lineBuffer, int y, bool skip) noexcept;
+        void renderIntoLineBuffer(BufferPixel* lineBuffer, int y, bool skip) noexcept;
         
         
     public: // Coords manipulation.
@@ -234,11 +254,10 @@ namespace ptui
         
         
     public: // CLUT.
-    
         // Remaps a color to a new one.
         // - That is, when `color` is encountered in the Tileset, `newColor` will be returned instead.
         // - Using `0` as `newColor` will make the color transparent!
-        void mapColor(Color8 color, Color8 newColor) noexcept
+        void mapColor(Color color, Color newColor) noexcept
         {
             _colorLUT[color] = newColor;
         }
@@ -246,7 +265,7 @@ namespace ptui
         // Resets the mapping to a default x => x setting.
         void resetCLUT() noexcept
         {
-            Color8 color = 0;
+            Color color = 0;
             
             // Fills the default color lookup table with the same colors.
             for (auto& mappedColor: _colorLUT)
@@ -255,25 +274,25 @@ namespace ptui
         
         
     protected: // Unsafe implementations.
-        // fillRect, but columns & rows are considered valid within the grid.
-        void fillRectUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile) noexcept
+        // `fillRectTiles`, but columns & rows are considered valid within the grid.
+        void fillRectTilesUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Tile tile) noexcept
         {
             // TODO: Optimizable with cached indexes calculation.
             for (int row = firstRow; row <= lastRow; row++)
                 for (int column = firstColumn; column <= lastColumn; column++)
-                    set(column, row, tile);
+                    setTile(column, row, tile);
         }
         
-        // fillRectColorOffset, but columns & rows are considered valid within the grid.
-        void fillRectColorOffsetUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, ColorOffset colorOffset) noexcept
+        // `fillRectDeltas`, but columns & rows are considered valid within the grid.
+        void fillRectDeltasUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow, Delta delta) noexcept
         {
             // TODO: Optimizable with cached indexes calculation.
             for (int row = firstRow; row <= lastRow; row++)
                 for (int column = firstColumn; column <= lastColumn; column++)
-                    setColorOffset(column, row, colorOffset);
+                    setDelta(column, row, delta);
         }
         
-        // shift, but columns & rows are considered valid within the grid.
+        // `shift`, but columns & rows are considered valid within the grid.
         void shiftUnsafe(int firstColumn, int firstRow, int lastColumn, int lastRow,
                          int shiftedColumns, int shiftedRows) noexcept
         {
@@ -316,14 +335,21 @@ namespace ptui
             {
                 // TODO: Can be sped up with MemOps.
                 for (int column = shiftFirstColumn; column != shiftEndColumn; column += shiftColumnIncrement)
-                    set(column, row, get(column - shiftedColumns, row - shiftedRows));
+                {
+                    auto sourceIndex = _tileIndex(column - shiftedColumns, row - shiftedRows);
+                    auto destIndex = _tileIndex(column, row);
+                    
+                    _tiles[destIndex] = _tiles[sourceIndex];
+                    _tiles[destIndex + deltaIndexOffset] = _tiles[sourceIndex + deltaIndexOffset];
+                }
             }
         }
     
     private:
-        using TilesAndColorOffsets = std::array<Tile, columns * rows * 2>; // Doubled as the second part holds the palette offsets.
+        // All the tiles, optionally with their Delta.
+        using Tiles = std::array<Tile, columns * rows * 2>;
         
-        static constexpr auto colorOffsetIndexOffset = columns * rows;
+        static constexpr auto deltaIndexOffset = columns * rows;
     
         static constexpr auto _tileIndex(short tileX, short tileY) noexcept
         {
@@ -347,12 +373,12 @@ namespace ptui
         short _tileSubYStart = 0;
         
         // Derived from _tilesetImage
-        const Color8* _tileImageRowBase = nullptr;
+        const TilesetPixel* _tileImageRowBase = nullptr;
 
-        const Color8* _tilesetImage = nullptr;
-        TilesAndColorOffsets _tiles = {};
+        const TilesetPixel* _tilesetImage = nullptr;
+        Tiles _tiles = {};
         
-        Color8 _colorLUT[256];
+        Color _colorLUT[256];
     };
 }
 

@@ -147,7 +147,7 @@ int battleMockup()
             }
         }
         ptui::tasUITileMap.setCursor(1, 1);
-        ptui::tasUITileMap.fillRect(1, 1, 3, 1);
+        ptui::tasUITileMap.fillRectTiles(1, 1, 3, 1, 0);
         ptui::tasUITileMap.printInteger(PC::fps_counter);
         
         
@@ -165,17 +165,17 @@ int battleMockup()
             ptui::tasUITileMap.printString("Items");
             if (ticks < 70)
             {
-                ptui::tasUITileMap.set(3, 21, '>');
+                ptui::tasUITileMap.setTile(3, 21, '>');
             }
             else if (ticks < 80)
             {
-                ptui::tasUITileMap.set(3, 21, ' ');
-                ptui::tasUITileMap.set(3, 22, '>');
+                ptui::tasUITileMap.setTile(3, 21, ' ');
+                ptui::tasUITileMap.setTile(3, 22, '>');
             }
             else if (ticks < 90)
             {
-                ptui::tasUITileMap.set(3, 21, '>');
-                ptui::tasUITileMap.set(3, 22, ' ');
+                ptui::tasUITileMap.setTile(3, 21, '>');
+                ptui::tasUITileMap.setTile(3, 22, ' ');
             }
             else if (ticks > 90)
             {
@@ -187,16 +187,16 @@ int battleMockup()
                 
                 if (ticks > 105)
                 {
-                    ptui::tasUITileMap.set(10, 21, ' ');
-                    ptui::tasUITileMap.set(10, 22, '>');
+                    ptui::tasUITileMap.setTile(10, 21, ' ');
+                    ptui::tasUITileMap.setTile(10, 22, '>');
                 }
                 else
-                    ptui::tasUITileMap.set(10, 21, '>');
+                    ptui::tasUITileMap.setTile(10, 21, '>');
             }
         }
         else
         {
-            ptui::tasUITileMap.fillRect(2, 20, 20, 20);
+            ptui::tasUITileMap.fillRectTiles(2, 20, 20, 20, 0);
             
             ptui::tasUITileMap.drawBox(-1, 21, 37, 30);
             
@@ -232,7 +232,7 @@ int battleMockup()
             
             ptui::tasUITileMap.drawGauge(31, 35, 28, ticks, 59);
             
-            ptui::tasUITileMap.fillRectColorOffset(31, 22, 35, 28, ticks >= 59 ? 8 : 0);
+            ptui::tasUITileMap.fillRectDeltas(31, 22, 35, 28, ticks >= 59 ? 8 : 0);
         }
         if (ticks > 120)
         {
@@ -255,11 +255,11 @@ int battleMockup()
             ptui::tasUITileMap.resetCursorBoundingBox();
         }
         else
-            ptui::tasUITileMap.fillRect(2, 2, 35, 6);
+            ptui::tasUITileMap.fillRectTiles(2, 2, 35, 6, 0);
     
         {
             ptui::tasUITileMap.drawGauge(1, 35, 8, ticks, 350);
-            ptui::tasUITileMap.fillRectColorOffset(1, 8, 35, 9, (ticks / 16 % 2) ? 40 : 0);
+            ptui::tasUITileMap.fillRectDeltas(1, 8, 35, 9, (ticks / 16 % 2) ? 40 : 0);
             ptui::tasUITileMap.setCursorBoundingBox(1, 9, 35, 9);
             ptui::tasUITileMap.setCursor(1, 9);
             ptui::tasUITileMap.printText("This is an interesting text!");
@@ -296,24 +296,24 @@ int testPerfsFull(bool cropped)
     ptui::tasUITileMap.drawBox(1, 1, 35, 28);
     ptui::tasUITileMap.setCursor(2, 2);
     ptui::tasUITileMap.setCursorBoundingBox(2, 2, 34, 27);
-    ptui::tasUITileMap.fillRectColorOffset(2, 2, 6, 2, 8);
+    ptui::tasUITileMap.fillRectDeltas(2, 2, 6, 2, 8);
     ptui::tasUITileMap.printText("Hello my good chap! Are we ready for the Punk Jam yet?!");
     ptui::tasUITileMap.resetCursorBoundingBox();
     
     ptui::tasUITileMap.drawGauge(2, 6, 4, 3, 6);
-    ptui::tasUITileMap.fillRectColorOffset(2, 4, 6, 4, 8);
+    ptui::tasUITileMap.fillRectDeltas(2, 4, 6, 4, 8);
     
     
     ptui::tasUITileMap.drawGauge(12, 16, 4, 3, 6);
-    ptui::tasUITileMap.fillRectColorOffset(12, 4, 16, 4, 16);
+    ptui::tasUITileMap.fillRectDeltas(12, 4, 16, 4, 16);
     
     ptui::tasUITileMap.drawGauge(22, 26, 4, 3, 6);
-    ptui::tasUITileMap.fillRectColorOffset(22, 4, 26, 4, 24);
+    ptui::tasUITileMap.fillRectDeltas(22, 4, 26, 4, 24);
     
     ptui::tasUITileMap.drawGauge(22, 29, 6, 6, 6);
-    ptui::tasUITileMap.fillRectColorOffset(22, 6, 24, 6, 8);
-    ptui::tasUITileMap.fillRectColorOffset(25, 6, 26, 6, 32);
-    ptui::tasUITileMap.fillRectColorOffset(27, 6, 29, 6, 16);
+    ptui::tasUITileMap.fillRectDeltas(22, 6, 24, 6, 8);
+    ptui::tasUITileMap.fillRectDeltas(25, 6, 26, 6, 32);
+    ptui::tasUITileMap.fillRectDeltas(27, 6, 29, 6, 16);
     
     PD::lineFillers[0] = TAS::NOPFiller;
     PD::lineFillers[1] = TAS::NOPFiller;
@@ -342,7 +342,7 @@ int testPerfsFull(bool cropped)
             printf("fps=%d\n", PC::fps_counter);
             ticks = 0;
             ptui::tasUITileMap.setCursor(2, 5);
-            ptui::tasUITileMap.fillRect(2, 5, 3, 5);
+            ptui::tasUITileMap.fillRectTiles(2, 5, 3, 5, 0);
             ptui::tasUITileMap.printInteger(PC::fps_counter);
         }
         ptui::tasUITileMap.mapColor(0+5, ticks);
@@ -395,7 +395,7 @@ int testPerfsStairs()
             for (int i = 0; i < 30; i++)
             {
                 ptui::tasUITileMap.setCursor(i, i);
-                ptui::tasUITileMap.fillRect(i, i, i+2, i, 32);
+                ptui::tasUITileMap.fillRectTiles(i, i, i+2, i, 32);
                 ptui::tasUITileMap.printInteger(PC::fps_counter);
             }
         }
@@ -447,7 +447,7 @@ int intermission(const char* nextScene)
     PD::lineFillers[1] = TAS::NOPFiller;
     
     // Drawing the UI.
-    ptui::tasUITileMap.fillColorOffset(8);
+    ptui::tasUITileMap.clear(0, 8);
     while (PC::isRunning() && PB::cBtn())
     {
         if (!PC::update()) 

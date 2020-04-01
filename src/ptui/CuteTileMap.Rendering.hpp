@@ -31,7 +31,7 @@ namespace ptui
         }
     };
     
-    template<bool transparentZeroColor, bool colorLookUp, bool colorOffset, int colorOffsetIndexOffset>
+    template<bool transparentZeroColor, bool colorLookUp, bool colorOffset, int deltaIndexOffset>
     struct TileLineOutput
     {
         using Color8 = std::uint8_t;
@@ -62,8 +62,8 @@ namespace ptui
             }
         }
     };
-    template<bool transparentZeroColor, int colorOffsetIndexOffset>
-    struct TileLineOutput<transparentZeroColor, false, true, colorOffsetIndexOffset>
+    template<bool transparentZeroColor, int deltaIndexOffset>
+    struct TileLineOutput<transparentZeroColor, false, true, deltaIndexOffset>
     {
         using Color8 = std::uint8_t;
         using Tile = std::uint8_t;
@@ -72,7 +72,7 @@ namespace ptui
                            const Color8* tileImageP, const Color8* tileImagePEnd,
                            Color8*& pixelP) noexcept
         {
-            auto tileColorOffset = tileP[colorOffsetIndexOffset];
+            auto tileColorOffset = tileP[deltaIndexOffset];
             
             for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
             {
@@ -87,7 +87,7 @@ namespace ptui
                                 const Color8* tileImageP,
                                 Color8*& pixelP) noexcept
         {
-            auto tileColorOffset = tileP[colorOffsetIndexOffset];
+            auto tileColorOffset = tileP[deltaIndexOffset];
             
             for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
             {
@@ -97,8 +97,8 @@ namespace ptui
             }
         }
     };
-    template<bool transparentZeroColor, int colorOffsetIndexOffset>
-    struct TileLineOutput<transparentZeroColor, true, false, colorOffsetIndexOffset>
+    template<bool transparentZeroColor, int deltaIndexOffset>
+    struct TileLineOutput<transparentZeroColor, true, false, deltaIndexOffset>
     {
         using Color8 = std::uint8_t;
         using Tile = std::uint8_t;
@@ -120,7 +120,7 @@ namespace ptui
                                 const Color8* tileImageP,
                                 Color8*& pixelP) noexcept
         {
-            auto tileColorOffset = tileP[colorOffsetIndexOffset];
+            auto tileColorOffset = tileP[deltaIndexOffset];
             
             for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
             {
@@ -130,8 +130,8 @@ namespace ptui
             }
         }
     };
-    template<bool transparentZeroColor, int colorOffsetIndexOffset>
-    struct TileLineOutput<transparentZeroColor, true, true, colorOffsetIndexOffset>
+    template<bool transparentZeroColor, int deltaIndexOffset>
+    struct TileLineOutput<transparentZeroColor, true, true, deltaIndexOffset>
     {
         using Color8 = std::uint8_t;
         using Tile = std::uint8_t;
@@ -141,7 +141,7 @@ namespace ptui
                            Color8*& pixelP) noexcept
         {
             // Which palette to use.
-            auto colorLut = originalColorLUT + tileP[colorOffsetIndexOffset];
+            auto colorLut = originalColorLUT + tileP[deltaIndexOffset];
             
             for (; tileImageP != tileImagePEnd; pixelP++, tileImageP++)
             {
@@ -157,7 +157,7 @@ namespace ptui
                                 Color8*& pixelP) noexcept
         {
             // Which palette to use.
-            auto colorLut = originalColorLUT + tileP[colorOffsetIndexOffset];
+            auto colorLut = originalColorLUT + tileP[deltaIndexOffset];
             
             for (auto i = tileWidth; i > 0; i--, pixelP++, tileImageP++)
             {
@@ -173,7 +173,7 @@ namespace ptui
              unsigned tileWidthP, unsigned tileHeightP,
              unsigned lineWidthP>
     template<bool transparentZeroColor, bool colorLookUp, bool colorOffset>
-    void CuteTileMap<columnsP, rowsP, tileWidthP, tileHeightP, lineWidthP>::renderIntoLineBuffer(Color8* lineBuffer, int y, bool skip) noexcept
+    void CuteTileMap<columnsP, rowsP, tileWidthP, tileHeightP, lineWidthP>::renderIntoLineBuffer(BufferPixel* lineBuffer, int y, bool skip) noexcept
     {
         // Row initialization / change.
         
@@ -207,9 +207,9 @@ namespace ptui
         // Local access is faster than field access.
         auto tileImageRowBase = _tileImageRowBase;
         // Current pixel pointer.
-        Color8* pixelP = lineBuffer + _indexStart;
+        BufferPixel* pixelP = lineBuffer + _indexStart;
         // Last pixel pointer.
-        Color8* pixelPEnd = lineBuffer + _indexEnd;
+        BufferPixel* pixelPEnd = lineBuffer + _indexEnd;
         // Current tile pointer.
         const Tile* tileP = &_tiles[_tileIndex(_tileXStart, _tileY)];
         
@@ -224,14 +224,14 @@ namespace ptui
                 auto tileImagePStart = tileImageRowBase + *tileP * tileSize;
                 // Let's render it.
                 // Points to the current pixel in the tile.
-                const Color8* tileImageP = tileImagePStart + _tileSubXStart;
+                const TilesetPixel* tileImageP = tileImagePStart + _tileSubXStart;
                 // Points right after the last pixel in the tile's row.
                 // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-                const Color8* tileImagePEnd = tileImagePStart + tileWidth;
+                const TilesetPixel* tileImagePEnd = tileImagePStart + tileWidth;
                 
-                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, colorOffsetIndexOffset>::output(tileP, _colorLUT,
-                                                                                                               tileImageP, tileImagePEnd,
-                                                                                                               pixelP);
+                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, deltaIndexOffset>::output(tileP, _colorLUT,
+                                                                                                         tileImageP, tileImagePEnd,
+                                                                                                         pixelP);
             }
             tileP++;
         }
@@ -245,11 +245,11 @@ namespace ptui
                 // Middle tile!
                 // Let's render it.
                 // Points to the current pixel in the tile.
-                const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
+                const TilesetPixel* tileImageP = tileImageRowBase + *tileP * tileSize;
                 
-                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, colorOffsetIndexOffset>:: template outputFixed<tileWidth>(tileP, _colorLUT,
-                                                                                                                                         tileImageP,
-                                                                                                                                         pixelP);
+                TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, deltaIndexOffset>:: template outputFixed<tileWidth>(tileP, _colorLUT,
+                                                                                                                                   tileImageP,
+                                                                                                                                   pixelP);
             }
             else
                 pixelP += tileWidth;
@@ -257,19 +257,19 @@ namespace ptui
         }
         
         // Let's render the last tile, if there is one.
-        if ((pixelP < pixelPEnd) && (*tileP != 0))
+        if ((*tileP != 0) && (pixelP < pixelPEnd))
         {
             // Last tile!
             // Let's render it.
             // Points to the current pixel in the tile.
-            const Color8* tileImageP = tileImageRowBase + *tileP * tileSize;
+            const TilesetPixel* tileImageP = tileImageRowBase + *tileP * tileSize;
             // Points right after the last pixel in the tile's row.
             // The line buffer is guaranteed to be greater than a single tile's width by the static_assert on top of the class.
-            const Color8* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
+            const TilesetPixel* tileImagePEnd = tileImageP + (pixelPEnd - pixelP);
             
-            TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, colorOffsetIndexOffset>::output(tileP, _colorLUT,
-                                                                                                           tileImageP, tileImagePEnd,
-                                                                                                           pixelP);
+            TileLineOutput<transparentZeroColor, colorLookUp, colorOffset, deltaIndexOffset>::output(tileP, _colorLUT,
+                                                                                                     tileImageP, tileImagePEnd,
+                                                                                                     pixelP);
             tileP++;
         }
     }
