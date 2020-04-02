@@ -3,7 +3,7 @@
 
 #   include "Pokitto.h"
 
-#   include "ptui/UITileMap.hpp"
+#   include <ptui>
 
 
 namespace ptui

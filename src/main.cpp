@@ -6,6 +6,7 @@
 #include "tilesets/TerminalTileSet.h"
 #include "maps.h"
 #include "ptui/TASTerminalTileMap.hpp"
+#include <ptui>
 
 int transition = 0;
 bool renderTransparency = true;
